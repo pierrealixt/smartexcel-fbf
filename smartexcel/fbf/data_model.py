@@ -188,10 +188,16 @@ class FbfFloodData():
         return f"Flood {instance.id}"
 
     def write_flood_acquisition_date(self, instance, kwargs={}):
-        return instance.acquisition_date.strftime('%Y-%m-%d')
+        if isinstance(instance.acquisition_date, str):
+            return instance.acquisition_date
+        else:
+            return instance.acquisition_date.strftime('%Y-%m-%d')
 
     def write_flood_forecast_date(self, instance, kwargs={}):
-        return instance.forecast_date.strftime('%Y-%m-%d')
+        if isinstance(instance.forecast_date, str):
+            return instance.forecast_date
+        else:
+            return instance.forecast_date.strftime('%Y-%m-%d')
 
     def write_flood_source(self, instance, kwargs={}):
         return instance.source
