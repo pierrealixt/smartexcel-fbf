@@ -42,8 +42,8 @@ class FbfFloodData():
             def_meta_res = namedtuple('Result', ', '.join(fields))
 
             results = [
-                def_meta_res(*list(row.values()))
-                for row in range(0, pl_res.nrows)
+                def_meta_res(*list(row[index].values()))
+                for index, row in enumerate(pl_res)
             ]
 
         else:
