@@ -54,7 +54,7 @@ FBF_DEFINITION = [
                 ]
             },
             {
-                'name': 'Simple array',
+                'name': 'Flood Summary View',
                 'func': 'add_group_column',
                 'payload': 'districts',
                 'stack': {
@@ -94,7 +94,6 @@ FBF_DEFINITION = [
                 ],
                 'recursive': {
                     # create a sheet for each instance of payload
-                    #
                     'sheet_name_func': 'subdistrict_summary',
                     'foreign_key': 'district_code',
                     'payload_func': 'subdistricts',
