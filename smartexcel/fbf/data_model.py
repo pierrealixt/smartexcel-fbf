@@ -10,22 +10,35 @@ def namedtuplefetchall(cursor):
 
 
 class FbfFloodData():
-    def __init__(self, flood_event_id, connection=None):
+    def __init__(self, flood_event_id, options={}):
         self.flood_event_id = flood_event_id
-        if connection is None:
+
+        if options.get('connection', None) is None:
             self.connection = psycopg2.connect(
                 user = os.environ['DB_USER'],
                 password = os.environ['DB_PASSWORD'],
                 host = os.environ['DB_HOST'],
                 port = os.environ['DB_PORT'],
                 database = os.environ['DB_DATABASE'])
+            self.pl_python_env = False
         else:
             self.connection = connection
+            self.pl_python_env = True
 
         self.results = {
             'flood': self.get_flood(flood_event_id),
             'districts': self.get_districts(flood_event_id),
         }
+
+    def execute_query(self, query):
+        if self.pl_python_env:
+            results = namedtuplefetchall(self.connection.cursor(query))
+        else:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query)
+                results = namedtuplefetchall(cursor)
+
+        return results
 
     def get_districts(self, flood_event_id):
 
@@ -53,11 +66,8 @@ class FbfFloodData():
         """.format(
             flood_event_id=flood_event_id
         )
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            results = namedtuplefetchall(cursor)
 
-        return results
+        return self.execute_query(query)
 
 
     def get_subdistricts(self, flood_event_id, district_code):
@@ -89,11 +99,7 @@ class FbfFloodData():
             flood_event_id=flood_event_id
         )
 
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            results = namedtuplefetchall(cursor)
-
-        return results
+        return self.execute_query(query)
 
 
     def get_villages(self, flood_event_id, sub_district_code):
@@ -124,11 +130,7 @@ class FbfFloodData():
             flood_event_id=flood_event_id
         )
 
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            results = namedtuplefetchall(cursor)
-
-        return results
+        return self.execute_query(query)
 
 
     def get_flood(self, flood_event_id):
@@ -142,11 +144,8 @@ class FbfFloodData():
         """.format(
             flood_event_id=flood_event_id
         )
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            results = namedtuplefetchall(cursor)
 
-        return results
+        return self.execute_query(query)
 
     def get_payload_subdistricts(self, instance, foreign_key):
         district_code = int(getattr(instance, foreign_key))
