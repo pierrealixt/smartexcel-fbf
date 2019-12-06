@@ -37,14 +37,16 @@ class FbfFloodData():
 
     def execute_query(self, query):
         if self.pl_python_env:
-            pl_res = plpy.execute(query)
-            fields = list(pl_res[0].keys())
+            res = plpy.execute(query)
+            fields = list(res[0].keys())
+
             def_meta_res = namedtuple('Result', ', '.join(fields))
 
             results = [
-                def_meta_res(*list(row[index].values()))
-                for index, row in enumerate(pl_res)
+            def_meta_res(*list(res[index].values()))
+            for index in range(0, len(res))
             ]
+            return results
 
         else:
             with self.connection.cursor() as cursor:
