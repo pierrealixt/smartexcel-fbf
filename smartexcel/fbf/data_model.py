@@ -1,7 +1,10 @@
 import os
 from collections import namedtuple
 import psycopg2
-# import plpy
+try:
+    import plpy
+except:
+    pass
 
 def namedtuplefetchall(cursor):
     "Return all rows from a cursor as a namedtuple"
