@@ -9,11 +9,12 @@ source env/bin/activate
 pip install -r requirements.txt
 ```
 
-Set environment variables
+### environment variables
 ```
 cp .env.template .env
 ```
-Edit .env then
+
+Edit `.env` then
 ```
 source .env
 ```
@@ -26,19 +27,27 @@ It is a simple way to run code.
 ```
 python -m smartexcel.test_smart_excel TestFlood
 ```
+A file `template.xlsx` is created at the root of this project. Open it and make sure it looks like what you want.
+
 
 ## Deployment
 
-1. Do your change, edit the definition, tweak the data model then commit and push.
+
+### SmartExcel code
+1. Do your change, edit the definition, tweak the data model. Make sure it works by running the test. Then commit and push.
 2. Go to rancher > Fbf stack > connect to the shell of the `db` container
-3.
+3. Run these commands:
 ```
 cd /usr/local/lib/python3.7/dist-packages
 rm -rf SmartExcel
 git clone https://github.com/pierrealixt/SmartExcel.git
 ```
 
-### python/pl function
+### python/pl code
+
+The function's name is `fbf_generate_excel_report_for_flood`. It is already present in the database.
+If you need to change the code of the function, you must replace it.
+
 ```
 CREATE OR REPLACE FUNCTION fbf_generate_excel_report_for_flood (flood_event_id integer)
   RETURNS varchar
@@ -67,3 +76,11 @@ CREATE OR REPLACE FUNCTION fbf_generate_excel_report_for_flood (flood_event_id i
    return "OK"
 $$ LANGUAGE plpython3u;
 ```
+
+
+## How to use it
+
+```
+select * from fbf_generate_excel_report_for_flood(15);
+```
+`15` is an ID present in the table `flood_event`.
