@@ -14,16 +14,18 @@ class FbfFloodData():
     def __init__(self, flood_event_id, pl_python_env=None):
         self.flood_event_id = flood_event_id
 
-        if pl_python_env:
-            self.pl_python_env = pl_python_env
-        else:
-            self.connection = psycopg2.connect(
-                user = os.environ['DB_USER'],
-                password = os.environ['DB_PASSWORD'],
-                host = os.environ['DB_HOST'],
-                port = os.environ['DB_PORT'],
-                database = os.environ['DB_DATABASE'])
-            self.pl_python_env = False
+        self.pl_python_env = True
+
+        # if pl_python_env:
+        #     self.pl_python_env = pl_python_env
+        # else:
+        #     self.connection = psycopg2.connect(
+        #         user = os.environ['DB_USER'],
+        #         password = os.environ['DB_PASSWORD'],
+        #         host = os.environ['DB_HOST'],
+        #         port = os.environ['DB_PORT'],
+        #         database = os.environ['DB_DATABASE'])
+        #     self.pl_python_env = False
 
         self.results = {
             'flood': self.get_flood(flood_event_id),
