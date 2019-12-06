@@ -38,12 +38,12 @@ class FbfFloodData():
     def execute_query(self, query):
         if self.pl_python_env:
             pl_res = plpy.execute(query)
-            fields = list(pl_res.rows[0].keys())
+            fields = list(pl_res[0].keys())
             def_meta_res = namedtuple('Result', ', '.join(fields))
 
             results = [
                 def_meta_res(*list(row.values()))
-                for row in self.pl_res.rows
+                for row in range(0, pl_res.nrows)
             ]
 
         else:
