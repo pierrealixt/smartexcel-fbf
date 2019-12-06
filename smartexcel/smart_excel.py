@@ -170,8 +170,6 @@ class SmartExcel():
 
                                     cell_pos = f"{n_col}{n_row}"
 
-                                    print(f'cell (row) at {cell_pos}')
-
                                     if row['name']:
                                         value = [
                                             f"{row['name']}",
@@ -198,7 +196,6 @@ class SmartExcel():
 
                                     for index, value in enumerate(values):
                                         cell_pos = f'{column["letter"]}{index + next_available["row"] + 1 + self.header_row}'
-                                        print(f'cell (colum) at {cell_pos}')
                                         fd_current_sheet.write(cell_pos, value, cell_format)
 
                                 next_available['row'] += len(values) + 1 + 2 # self.SPACE_COMPONENT

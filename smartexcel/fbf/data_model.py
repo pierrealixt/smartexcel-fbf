@@ -1,3 +1,4 @@
+import os
 from collections import namedtuple
 import psycopg2
 
@@ -7,178 +8,164 @@ def namedtuplefetchall(cursor):
     nt_result = namedtuple('Result', [col[0] for col in desc])
     return [nt_result(*row) for row in cursor.fetchall()]
 
-def get_connection():
-    import os
-    return psycopg2.connect(
-        user = os.environ['DB_USER'],
-        password = os.environ['DB_PASSWORD'],
-        host = os.environ['DB_HOST'],
-        port = os.environ['DB_PORT'],
-        database = os.environ['DB_DATABASE'])
-
-def get_districts(flood_event_id):
-    connection = get_connection()
-
-    query = """
-        SELECT
-            area.name as district_name,
-            area.dc_code as district_code,
-            summary.vulnerability_total_score as vulnerability_total_score,
-            summary.building_count as total_buildings,
-            summary.flooded_building_count as flooded_buildings,
-            summary.residential_building_count as residential_building_count,
-            summary.residential_flooded_building_count as residential_flooded_building_count,
-            summary.clinic_dr_building_count as clinic_dr_building_count,
-            summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
-
-        FROM
-            flood_event fe,
-            flood_event_district_summary summary,
-            district area
-        WHERE
-            fe.id = summary.flood_event_id
-            and summary.district_id = area.dc_code
-            and fe.id = {flood_event_id}
-        ;
-    """.format(
-        flood_event_id=flood_event_id
-    )
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        results = namedtuplefetchall(cursor)
-
-    connection.close()
-
-    return results
-
-
-def get_subdistricts(flood_event_id, district_code):
-    connection = get_connection()
-
-    query = """
-        SELECT
-            area.name as sub_district_name,
-            area.sub_dc_code as sub_district_code,
-            summary.vulnerability_total_score as vulnerability_total_score,
-            summary.building_count as total_buildings,
-            summary.flooded_building_count as flooded_buildings,
-            summary.residential_building_count as residential_building_count,
-            summary.residential_flooded_building_count as residential_flooded_building_count,
-            summary.clinic_dr_building_count as clinic_dr_building_count,
-            summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
-
-        FROM
-            flood_event fe,
-            flood_event_sub_district_summary summary,
-            sub_district area
-        WHERE
-            fe.id = summary.flood_event_id
-            and summary.sub_district_id = area.sub_dc_code
-            and area.dc_code = {district_code}
-            and fe.id = {flood_event_id}
-        ;
-    """.format(
-        district_code=district_code,
-        flood_event_id=flood_event_id
-    )
-
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        results = namedtuplefetchall(cursor)
-
-    connection.close()
-    return results
-
-
-def get_villages(flood_event_id, sub_district_code):
-    connection = get_connection()
-
-    query = """
-        SELECT
-            area.name as village_name,
-            area.village_code as village_code,
-            summary.vulnerability_total_score as vulnerability_total_score,
-            summary.building_count as total_buildings,
-            summary.flooded_building_count as flooded_buildings,
-            summary.residential_building_count as residential_building_count,
-            summary.residential_flooded_building_count as residential_flooded_building_count,
-            summary.clinic_dr_building_count as clinic_dr_building_count,
-            summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
-
-        FROM
-            flood_event fe,
-            flood_event_village_summary summary,
-            village area
-        WHERE
-            fe.id = summary.flood_event_id
-            and summary.village_id = area.village_code
-            and area.sub_dc_code = {sub_district_code}
-            and fe.id = {flood_event_id}
-        ;
-    """.format(
-        sub_district_code=sub_district_code,
-        flood_event_id=flood_event_id
-    )
-
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        results = namedtuplefetchall(cursor)
-
-    connection.close()
-    return results
-
-
-def get_flood(flood_event_id):
-    connection = get_connection()
-    query = """
-        SELECT
-            *
-        FROM
-            flood_event fe
-        WHERE
-            fe.id = {flood_event_id}
-    """.format(
-        flood_event_id=flood_event_id
-    )
-    with connection.cursor() as cursor:
-        cursor.execute(query)
-        results = namedtuplefetchall(cursor)
-
-    connection.close()
-    return results
 
 class FbfFloodData():
-    def __init__(self, flood_event_id):
+    def __init__(self, flood_event_id, connection=None):
         self.flood_event_id = flood_event_id
+        if connection is None:
+            self.connection = psycopg2.connect(
+                user = os.environ['DB_USER'],
+                password = os.environ['DB_PASSWORD'],
+                host = os.environ['DB_HOST'],
+                port = os.environ['DB_PORT'],
+                database = os.environ['DB_DATABASE'])
+        else:
+            self.connection = connection
 
         self.results = {
-            'flood': get_flood(flood_event_id),
-            # 'villages': get_results(flood_event_id, 'village'),
-            'districts': get_districts(flood_event_id),
-            # 'sub_districts': get_results('sub_district'),
+            'flood': self.get_flood(flood_event_id),
+            'districts': self.get_districts(flood_event_id),
         }
+
+    def get_districts(self, flood_event_id):
+
+        query = """
+            SELECT
+                area.name as district_name,
+                area.dc_code as district_code,
+                summary.vulnerability_total_score as vulnerability_total_score,
+                summary.building_count as total_buildings,
+                summary.flooded_building_count as flooded_buildings,
+                summary.residential_building_count as residential_building_count,
+                summary.residential_flooded_building_count as residential_flooded_building_count,
+                summary.clinic_dr_building_count as clinic_dr_building_count,
+                summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
+
+            FROM
+                flood_event fe,
+                flood_event_district_summary summary,
+                district area
+            WHERE
+                fe.id = summary.flood_event_id
+                and summary.district_id = area.dc_code
+                and fe.id = {flood_event_id}
+            ;
+        """.format(
+            flood_event_id=flood_event_id
+        )
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            results = namedtuplefetchall(cursor)
+
+        return results
+
+
+    def get_subdistricts(self, flood_event_id, district_code):
+
+        query = """
+            SELECT
+                area.name as sub_district_name,
+                area.sub_dc_code as sub_district_code,
+                summary.vulnerability_total_score as vulnerability_total_score,
+                summary.building_count as total_buildings,
+                summary.flooded_building_count as flooded_buildings,
+                summary.residential_building_count as residential_building_count,
+                summary.residential_flooded_building_count as residential_flooded_building_count,
+                summary.clinic_dr_building_count as clinic_dr_building_count,
+                summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
+
+            FROM
+                flood_event fe,
+                flood_event_sub_district_summary summary,
+                sub_district area
+            WHERE
+                fe.id = summary.flood_event_id
+                and summary.sub_district_id = area.sub_dc_code
+                and area.dc_code = {district_code}
+                and fe.id = {flood_event_id}
+            ;
+        """.format(
+            district_code=district_code,
+            flood_event_id=flood_event_id
+        )
+
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            results = namedtuplefetchall(cursor)
+
+        return results
+
+
+    def get_villages(self, flood_event_id, sub_district_code):
+        query = """
+            SELECT
+                area.name as village_name,
+                area.village_code as village_code,
+                summary.vulnerability_total_score as vulnerability_total_score,
+                summary.building_count as total_buildings,
+                summary.flooded_building_count as flooded_buildings,
+                summary.residential_building_count as residential_building_count,
+                summary.residential_flooded_building_count as residential_flooded_building_count,
+                summary.clinic_dr_building_count as clinic_dr_building_count,
+                summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
+
+            FROM
+                flood_event fe,
+                flood_event_village_summary summary,
+                village area
+            WHERE
+                fe.id = summary.flood_event_id
+                and summary.village_id = area.village_code
+                and area.sub_dc_code = {sub_district_code}
+                and fe.id = {flood_event_id}
+            ;
+        """.format(
+            sub_district_code=sub_district_code,
+            flood_event_id=flood_event_id
+        )
+
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            results = namedtuplefetchall(cursor)
+
+        return results
+
+
+    def get_flood(self, flood_event_id):
+        query = """
+            SELECT
+                *
+            FROM
+                flood_event fe
+            WHERE
+                fe.id = {flood_event_id}
+        """.format(
+            flood_event_id=flood_event_id
+        )
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            results = namedtuplefetchall(cursor)
+
+        return results
 
     def get_payload_subdistricts(self, instance, foreign_key):
         district_code = int(getattr(instance, foreign_key))
-
-        return get_subdistricts(self.flood_event_id, district_code)
+        return self.get_subdistricts(self.flood_event_id, district_code)
 
     def get_payload_villages(self, instance, foreign_key):
         sub_district_code = int(getattr(instance, foreign_key))
-
-        return get_villages(self.flood_event_id, sub_district_code)
-
+        return self.get_villages(self.flood_event_id, sub_district_code)
 
     def get_sheet_name_for_flood_summary(self, kwargs={}):
         return f"Flood Summary"
 
     def get_sheet_name_for_subdistrict_summary(self, instance, kwargs={}):
-        return f"District {instance.district_name} Summary"
+        name = f"District {instance.district_name} Summary"
+        return name[0:30]
 
     def get_sheet_name_for_village_summary(self, instance, kwargs={}):
         name = f"Sub district {instance.sub_district_name} Summary"
         return name[0:30]
-        # return f"{instance[kwargs['index']].area_name} Summary"
 
     def write_flood_title(self, instance, kwargs={}):
         return f"Flood {instance.id}"
@@ -187,7 +174,7 @@ class FbfFloodData():
         return instance.acquisition_date.strftime('%Y-%m-%d')
 
     def write_flood_forecast_date(self, instance, kwargs={}):
-        return instance.forecast_date
+        return instance.forecast_date.strftime('%Y-%m-%d')
 
     def write_flood_source(self, instance, kwargs={}):
         return instance.source
