@@ -161,5 +161,33 @@ class TestFlood(unittest.TestCase):
 
         smart_excel.dump()
 
+from collections import namedtuple
+class TestPlPy(unittest.TestCase):
+    def setUp(self):
+
+        def_pl_res = namedtuple('PLyResult', 'status, nrows, rows, progress')
+        self.pl_res = def_pl_res(
+            status=5,
+            nrows=1,
+            rows=[
+                {
+                    'id': 15,
+                    'flood_map_id': 15,
+                    'acquisition_date': '2019-11-30'
+                }
+            ],
+            progress=None
+        )
+
+    def runTest(self):
+        fields = list(self.pl_res.rows[0].keys())
+        def_meta_res = namedtuple('Result', ', '.join(fields))
+
+        final_result = [
+            def_meta_res(*list(row.values()))
+            for row in self.pl_res.rows
+        ]
+        import pdb; pdb.set_trace()
+
 if __name__ == "__main__":
     unittest.main()

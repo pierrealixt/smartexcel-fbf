@@ -1,7 +1,7 @@
 import os
 from collections import namedtuple
 import psycopg2
-import plpy
+# import plpy
 
 def namedtuplefetchall(cursor):
     "Return all rows from a cursor as a namedtuple"
@@ -11,27 +11,19 @@ def namedtuplefetchall(cursor):
 
 
 class FbfFloodData():
-    def __init__(self, flood_event_id):
+    def __init__(self, flood_event_id, pl_python_env=None):
         self.flood_event_id = flood_event_id
-        # self.pl_python_env = True
-        # if pl_python_env:
-        #     self.pl_python_env = pl_python_env
-        # else:
-        # self.connection = psycopg2.connect(
-        #     user = os.environ['DB_USER'],
-        #     password = os.environ['DB_PASSWORD'],
-        #     host = os.environ['DB_HOST'],
-        #     port = os.environ['DB_PORT'],
-        #     database = os.environ['DB_DATABASE'])
 
-        self.connection = psycopg2.connect(
-            user = os.environ['POSTGRES_USER'],
-            password = os.environ['POSTGRES_PASS'],
-            host = 'localhost',
-            port = '5432',
-            database = os.environ['POSTGRES_DBNAME'])
-
-        #     self.pl_python_env = False
+        if pl_python_env:
+            self.pl_python_env = pl_python_env
+        else:
+            self.connection = psycopg2.connect(
+                user = os.environ['DB_USER'],
+                password = os.environ['DB_PASSWORD'],
+                host = os.environ['DB_HOST'],
+                port = os.environ['DB_PORT'],
+                database = os.environ['DB_DATABASE'])
+            self.pl_python_env = False
 
         self.results = {
             'flood': self.get_flood(flood_event_id),
@@ -39,12 +31,20 @@ class FbfFloodData():
         }
 
     def execute_query(self, query):
-        # if self.pl_python_env:
-        #     results = namedtuplefetchall(plpy.cursor(query))
-        # else:
-        with self.connection.cursor() as cursor:
-            cursor.execute(query)
-            results = namedtuplefetchall(cursor)
+        if self.pl_python_env:
+            pl_res = plpy.execute(query)
+            fields = list(pl_res.rows[0].keys())
+            def_meta_res = namedtuple('Result', ', '.join(fields))
+
+            results = [
+                def_meta_res(*list(row.values()))
+                for row in self.pl_res.rows
+            ]
+
+        else:
+            with self.connection.cursor() as cursor:
+                cursor.execute(query)
+                results = namedtuplefetchall(cursor)
 
         return results
 
