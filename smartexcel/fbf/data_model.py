@@ -13,16 +13,24 @@ def namedtuplefetchall(cursor):
 class FbfFloodData():
     def __init__(self, flood_event_id):
         self.flood_event_id = flood_event_id
-        self.pl_python_env = True
+        # self.pl_python_env = True
         # if pl_python_env:
         #     self.pl_python_env = pl_python_env
         # else:
-        #     self.connection = psycopg2.connect(
-        #         user = os.environ['DB_USER'],
-        #         password = os.environ['DB_PASSWORD'],
-        #         host = os.environ['DB_HOST'],
-        #         port = os.environ['DB_PORT'],
-        #         database = os.environ['DB_DATABASE'])
+        # self.connection = psycopg2.connect(
+        #     user = os.environ['DB_USER'],
+        #     password = os.environ['DB_PASSWORD'],
+        #     host = os.environ['DB_HOST'],
+        #     port = os.environ['DB_PORT'],
+        #     database = os.environ['DB_DATABASE'])
+
+        self.connection = psycopg2.connect(
+            user = os.environ['POSTGRES_USER'],
+            password = os.environ['POSTGRES_PASS'],
+            host = 'localhost',
+            port = '5432',
+            database = os.environ['POSTGRES_DBNAME'])
+
         #     self.pl_python_env = False
 
         self.results = {
@@ -31,12 +39,12 @@ class FbfFloodData():
         }
 
     def execute_query(self, query):
-        if self.pl_python_env:
-            results = namedtuplefetchall(plpy.cursor(query))
-        else:
-            with self.connection.cursor() as cursor:
-                cursor.execute(query)
-                results = namedtuplefetchall(cursor)
+        # if self.pl_python_env:
+        #     results = namedtuplefetchall(plpy.cursor(query))
+        # else:
+        with self.connection.cursor() as cursor:
+            cursor.execute(query)
+            results = namedtuplefetchall(cursor)
 
         return results
 
