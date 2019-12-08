@@ -159,7 +159,6 @@ FBF_DEFINITION = [
                                                 'name': 'Village ID',
                                                 'key': 'village_id',
                                                 'validations': {},
-                                                'format': 'number'
                                             },
                                             {
                                                 'name': 'Total Buildings',

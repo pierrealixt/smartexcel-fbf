@@ -34,6 +34,7 @@ class FbfFloodData():
         }
 
     def execute_query(self, query):
+        print(query)
         if self.pl_python_env:
             res = plpy.execute(query)
             try:
@@ -225,7 +226,7 @@ class FbfFloodData():
         return instance.village_name
 
     def write_village_id(self, instance, kwargs={}):
-        return int(instance.village_code)
+        return str(int(instance.village_code))
 
     def write_total_buildings(self, instance, kwargs={}):
         return instance.total_buildings
@@ -234,7 +235,10 @@ class FbfFloodData():
         return instance.flooded_buildings
 
     def write_not_flooded_buildings(self, instance, kwargs={}):
-        return instance.total_buildings - instance.flooded_buildings
+        try:
+            return instance.total_buildings - instance.flooded_buildings
+        except Exception:
+            return 0
 
     def write_vulnerability_total_score(self, instance, kwargs={}):
         return instance[kwargs['index']]['vulnerability_total_score']
