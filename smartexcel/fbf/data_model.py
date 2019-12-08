@@ -187,16 +187,22 @@ class FbfFloodData():
         return f"Flood {instance.id}"
 
     def write_flood_acquisition_date(self, instance, kwargs={}):
-        if isinstance(instance.acquisition_date, str):
-            return instance.acquisition_date
-        else:
-            return instance.acquisition_date.strftime('%Y-%m-%d')
+        try:
+            if isinstance(instance.acquisition_date, str):
+                return instance.acquisition_date
+            else:
+                return instance.acquisition_date.strftime('%Y-%m-%d')
+        except Exception:
+            return None
 
     def write_flood_forecast_date(self, instance, kwargs={}):
-        if isinstance(instance.forecast_date, str):
-            return instance.forecast_date
-        else:
-            return instance.forecast_date.strftime('%Y-%m-%d')
+        try:
+            if isinstance(instance.forecast_date, str):
+                return instance.forecast_date
+            else:
+                return instance.forecast_date.strftime('%Y-%m-%d')
+        except Exception:
+            return None
 
     def write_flood_source(self, instance, kwargs={}):
         return instance.source
@@ -226,6 +232,9 @@ class FbfFloodData():
         return instance.village_name
 
     def write_village_id(self, instance, kwargs={}):
+        # village_id : 3201160018.0
+        # cast to int to remove the decimal
+        # then to str because 3201160018 is bigger than 2,147,483,647
         return str(int(instance.village_code))
 
     def write_total_buildings(self, instance, kwargs={}):
