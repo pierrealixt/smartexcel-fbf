@@ -39,8 +39,8 @@ A file `template.xlsx` is created at the root of this project. Open it and make 
 3. Run these commands:
 ```
 cd /usr/local/lib/python3.7/dist-packages
-rm -rf SmartExcel
-git clone https://github.com/pierrealixt/SmartExcel.git
+rm -rf smartexcel-fbf
+git clone https://github.com/kartoza/smartexcel-fbf.git
 ```
 
 ### python/pl code
