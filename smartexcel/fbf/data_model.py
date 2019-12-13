@@ -34,7 +34,6 @@ class FbfFloodData():
         }
 
     def execute_query(self, query):
-        print(query)
         if self.pl_python_env:
             res = plpy.execute(query)
             try:
@@ -63,7 +62,7 @@ class FbfFloodData():
             SELECT
                 area.name as district_name,
                 area.dc_code as district_code,
-                summary.vulnerability_total_score as vulnerability_total_score,
+                summary.total_vulnerability_score as vulnerability_total_score,
                 summary.building_count as total_buildings,
                 summary.flooded_building_count as flooded_buildings,
                 summary.residential_building_count as residential_building_count,
@@ -73,7 +72,7 @@ class FbfFloodData():
 
             FROM
                 flood_event fe,
-                flood_event_district_summary summary,
+                mv_flood_event_district_summary summary,
                 district area
             WHERE
                 fe.id = summary.flood_event_id
@@ -93,7 +92,7 @@ class FbfFloodData():
             SELECT
                 area.name as sub_district_name,
                 area.sub_dc_code as sub_district_code,
-                summary.vulnerability_total_score as vulnerability_total_score,
+                summary.total_vulnerability_score as vulnerability_total_score,
                 summary.building_count as total_buildings,
                 summary.flooded_building_count as flooded_buildings,
                 summary.residential_building_count as residential_building_count,
@@ -103,7 +102,7 @@ class FbfFloodData():
 
             FROM
                 flood_event fe,
-                flood_event_sub_district_summary summary,
+                mv_flood_event_sub_district_summary summary,
                 sub_district area
             WHERE
                 fe.id = summary.flood_event_id
@@ -124,7 +123,7 @@ class FbfFloodData():
             SELECT
                 area.name as village_name,
                 area.village_code as village_code,
-                summary.vulnerability_total_score as vulnerability_total_score,
+                summary.total_vulnerability_score as vulnerability_total_score,
                 summary.building_count as total_buildings,
                 summary.flooded_building_count as flooded_buildings,
                 summary.residential_building_count as residential_building_count,
@@ -134,7 +133,7 @@ class FbfFloodData():
 
             FROM
                 flood_event fe,
-                flood_event_village_summary summary,
+                mv_flood_event_village_summary summary,
                 village area
             WHERE
                 fe.id = summary.flood_event_id
