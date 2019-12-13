@@ -41,13 +41,8 @@ A file `template.xlsx` is created at the root of this project. Open it and make 
 cd /usr/local/lib/python3.7/dist-packages
 rm -rf smartexcel-fbf
 git clone https://github.com/kartoza/smartexcel-fbf.git
-```
-
-### SmartExcel dependencies
-SmartExcel needs two dependencies:
-```
-pip3 install xlsxwriter
-pip3 install openpyxl
+cd smartexcel-fbf
+pip3 install -r requirements.txt
 ```
 
 ### python/pl code
@@ -62,7 +57,7 @@ CREATE OR REPLACE FUNCTION fbf_generate_excel_report_for_flood (flood_event_id i
    import io
    import sys
    sys.path.insert(0, '/usr/local/lib/python3.7/dist-packages')
-   sys.path.insert(0, '/usr/local/lib/python3.7/dist-packages/SmartExcel/smartexcel')
+   sys.path.insert(0, '/usr/local/lib/python3.7/dist-packages/smartexcel-fbf/smartexcel')
    from smart_excel import SmartExcel
    from fbf.data_model import FbfFloodData
    from fbf.definition import FBF_DEFINITION
