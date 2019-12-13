@@ -26,8 +26,7 @@ class SmartExcel():
     """  # noqa
     header_row = 1
     max_row = 100
-    meta_worksheet_name = '_meta'
-    data_worksheet_name = '_data'
+    reserved_sheets = ['_data', '_meta']
     READMODE = False
     WRITEMODE = False
 
@@ -95,16 +94,10 @@ class SmartExcel():
 
         self.output = output
         self.workbook = xlsxwriter.Workbook(self.output)
-        # self.main_ws = self.workbook.add_worksheet()
 
-        self.data_ws = self.workbook.add_worksheet(self.data_worksheet_name)
-        self.data_ws.protect()
-
-        self.meta_ws = self.workbook.add_worksheet(self.meta_worksheet_name)
-        self.meta_ws.protect()
+        self.add_reserved_sheets()
 
         self.parse_definition(definition)
-        # self.build_columns_from_definition(definition)
 
 
     def parse(self):
@@ -142,24 +135,37 @@ class SmartExcel():
         """
         assert self.WRITEMODE
 
+        # First, we create the user sheets
+        for sheet_key, sheet_data in self.sheets.items():
+            if not sheet_data['reserved']:
+                sheet_data['fd'] = self.workbook.add_worksheet(sheet_data['name'])
+
+        # Then, we create the reserved sheets
+        for sheet_key, sheet_data in self.sheets.items():
+            if sheet_data['reserved']:
+                sheet_data['fd'] = self.workbook.add_worksheet(sheet_data['name'])
+                sheet_data['fd'].protect()
+
         # self.build_top_header()
         self.build_meta()
         self.build_data()
 
         for sheet_key, sheet_data in self.sheets.items():
-            fd_current_sheet = self.workbook.add_worksheet(sheet_data['name'])
+            if sheet_data['reserved']:
+                continue
+            fd_current_sheet = sheet_data['fd']
 
-            max_stack = len(sheet_data['components'])
+            nb_components = len(sheet_data['components'])
             current_component = None
             next_available = {
                 'row': 1,
                 'col': 0
             }
 
-            for x in range(0, max_stack):
-                for y in range(0, max_stack):
+            for x in range(0, nb_components):
+                for y in range(0, nb_components):
                     for component in sheet_data['components']:
-                        if component['stack']['x'] == x and component['stack']['y'] == y:
+                        if component['position']['x'] == x and component['position']['y'] == y:
 
                             current_component = component
                             if 'rows' in component:
@@ -202,54 +208,103 @@ class SmartExcel():
 
         self.workbook.close()
 
-    def add_sheet(self, definition, index=0):
-        # try:
-        #     import pdb ; pdb.set_trace()
-        #     sheet_name = self.get_value(
-        #         self.data,
-        #         f"get_sheet_name_for_{definition['def_sheet_name']['func']}",
-        #         self.data.results[definition['def_sheet_name']['payload']],
-        #         {})
-        # except KeyError as error:
-            # import pdb ; pdb.set_trace()
-            # sheet_name = definition.get('sheet_name_func', f'default-{index}')
+    def add_reserved_sheets(self):
+        """SmartExcel automatically adds two spreadsheets:
+        - _data: to store drop-down list values
+        - _meta: to store configurations
+        """
+        for sheet_name in self.reserved_sheets:
+            self.sheets[sheet_name] = {
+                'reserved': True,
+                'name': sheet_name
+            }
+
+    def parse_sheet(self, definition, index=0):
+        """Parse a sheet definition.
+
+        Attributes:
+        - type : 'sheet'
+        - key : a string
+        - name : either a string or a list:
+            => 'name': 'A sheet name'
+            => 'name': {
+                    'func': 'a_function'
+                }
+        - components: a list
+        """
+
         try:
-            sheet_name = definition['sheet_name']
+            if isinstance(definition['name'], str):
+                sheet_name = definition['name']
+            else:
+                sheet_name = getattr(
+                    self.data,
+                    f"get_sheet_name_for_{definition['name']['func']}")()
         except KeyError:
-            sheet_name = getattr(
-                self.data,
-                f"get_sheet_name_for_{definition['sheet_name_func']}")()
+            sheet_name = f'Default-{index}'
 
-        print(f'Add {sheet_name}')
+        if sheet_name in self.reserved_sheets:
+            raise ValueError(f'{sheet_name} is a reserved sheet name.')
 
         try:
-            sheet_key = f"{definition['key']}-{index}"
+            sheet_key = definition['key']
         except KeyError:
             sheet_key = f'{sheet_name}-{index}'
 
         self.sheets[sheet_key] = {
             'name': sheet_name,
+            'reserved': False,
             'components': []
         }
 
-        self.parse_components(definition['components'], **{
-            'sheet_key': sheet_key
-        })
+        if 'components' in definition:
+            self.parse_components(definition['components'], **{
+                'sheet_key': sheet_key
+            })
 
     def parse_components(self, components, **kwargs):
+        """Parse sheet's components."""
+
+        component_required_attrs = [
+            'type',
+            'name',
+            'position',
+            'payload'
+        ]
+
         for component in components:
+
             kwargs.update(component)
-            try:
-                getattr(self, component['func'])(**kwargs)
-            except AttributeError as e:
-                raise Exception(f'{e} not supported')
+
+            validate_attrs(component_required_attrs, kwargs, 'component')
+            validate_position(kwargs)
+
+            # validate_component_position
+            for sheet_component in self.sheets[kwargs['sheet_key']]['components']:
+                if (
+                    component['position']['x'] == sheet_component['position']['x']
+                    and
+                    component['position']['y'] == sheet_component['position']['y']
+                ):
+                    raise ValueError(
+                        f'Cannot position `{component["name"]}` at {component["position"]["x"]};{component["position"]["y"]}. `{sheet_component["name"]}` is already present.'
+                    )
+
+
+            if component['type'] == 'table':
+                self.parse_table(**kwargs)
+            elif component['type'] == 'map':
+                self.parse_map(**kwargs)
+            else:
+                raise ValueError(f"Type `{component['type']}` not supported.")
             if 'recursive' in component:
                 for index, instance in enumerate(self.data.results[component['payload']]):
 
-                    payload = getattr(self.data, f"get_payload_{component['recursive']['payload_func']}")(
+                    payload = self.get_payload(
+                        func_name=component['recursive']['payload_func'],
                         instance=instance,
-                        foreign_key=component['recursive']['foreign_key']
-                    )
+                        foreign_key=component['recursive']['foreign_key'])
+
                     self.data.results[component['recursive']['payload_func']] = payload
 
                     for rec_component in component['recursive']['components']:
@@ -257,42 +312,92 @@ class SmartExcel():
 
                     sheet_name = getattr(
                         self.data,
-                        f"get_sheet_name_for_{component['recursive']['sheet_name_func']}")(
+                        f"get_sheet_name_for_{component['recursive']['name']['func']}")(
                             instance
                         )
 
-                    self.add_sheet(
+                    self.parse_sheet(
                         definition={
-                            'sheet_name': sheet_name,
+                            'name': sheet_name,
                             'components': component['recursive']['components']
                         },
                         index=index)
 
 
-
-    def call_ext_func(self, func, *args, **kwargs):
-        if func == 'add_sheet':
-            self.add_sheet(*args, **kwargs)
-        elif func == 'add_format':
-            self.add_format(args[0]['kwargs'])
-
-
-
     def parse_definition(self, definition):
-        for elem in definition:
-            self.call_ext_func(elem['func'], elem)
+        """Parse a definition.
 
-    def add_format(self, cell_format):
+        :param definition: the spreadhsheet definition
+        :type definition: list of dict
+
+        Supported types:
+        - sheet
+        - format
+        """
+
+        for elem in definition:
+            try:
+                if elem['type'] == 'sheet':
+                    self.parse_sheet(elem)
+                elif elem['type'] == 'format':
+                    self.parse_format(elem)
+            except KeyError:
+                pass
+
+
+    def parse_format(self, cell_format):
+        """Parse a format.
+
+        :param cell_format: the format definitiob
+        :type cell_format: a dict
+
+        Attributes of `cell_format`:
+        - 'type': 'format'
+        - 'key': a string (required)
+        - 'format': a dict (required):
+            => https://xlsxwriter.readthedocs.io/format.html
+        """
+        required_attrs = [
+            'key',
+            'format'
+        ]
+
+        validate_attrs(required_attrs, cell_format, 'format')
+
         self.formats[cell_format['key']] = self.workbook.add_format(
             cell_format['format'])
 
         if 'num_format' in cell_format:
+            # It controls whether a number is displayed
+            # as an integer, a floating point number, a date,
+            # a currency value or some other user defined format.
             self.formats[cell_format['key']].set_num_format(
                 cell_format['num_format'])
 
 
-    def add_group_row(self, **kwargs):
-            # and if 'header' in deef['components']:
+
+    def parse_map(self, **kwargs):
+        """Parse a map.
+
+        :param kwargs: the map definition
+        :type kwargs: a dict
+
+        Attributes:
+        - 'type': 'table' (required)
+        - 'name': a string (required)
+        - 'position': a dict (required)
+            => {
+                'x': 0,
+                'y': 0
+            }
+        - 'rows': a list of dict (required)
+        - 'payload': a string (required)
+        """
+
+        map_required_attrs = [
+            'rows',
+        ]
+        validate_attrs(map_required_attrs, kwargs, 'map component')
 
         parsed_rows = []
         for row in kwargs['rows']:
@@ -309,68 +414,123 @@ class SmartExcel():
             'payload': self.data.results[kwargs['payload']],
             'name': kwargs['name'],
             'rows': parsed_rows,
-            'stack': kwargs['stack']
+            'position': kwargs['position']
         })
 
-    def add_group_column(self, **kwargs):
-        try:
+    def parse_table(self, **kwargs):
+        """Parse a Table component.
+
+        Attributes:
+        - 'type': 'table' (required)
+        - 'name': a string (required)
+        - 'position': a dict (required)
+        - 'columns': a list of dict (required)
+        - 'payload': a string (required)
+        - 'group_name'
+        - 'repeat': a string or a dict
+        """
+
+        table_required_attrs = [
+            'columns',
+        ]
+        validate_attrs(table_required_attrs, kwargs, 'table component')
+
+        # parse 'group_name'
+        if 'group_name' in kwargs:
             group_name = kwargs['group_name']
-        except:
+        else:
             group_name = None
 
-
-        try:
-            if 'repeat_func' in kwargs:
-                repeat = getattr(
-                    self.data,
-                    'write_{key}'.format(
-                        key=kwargs['repeat_func']))()
-            else:
-                repeat = kwargs['repeat']
-        except Exception:
+        # parse 'repeat'
+        if 'repeat_func' in kwargs:
+            repeat = getattr(
+                self.data,
+                'write_{key}'.format(
+                    key=kwargs['repeat_func']))()
+        elif 'repeat' in kwargs:
+            repeat = kwargs['repeat']
+        else:
             repeat = 1
+
+        # parse 'columns'
+        parsed_columns = self.parse_columns(
+            kwargs['columns'],
+            repeat)
+
+        sheet_key = kwargs['sheet_key']
+
+        # parse 'payload'
+        if kwargs['payload'] in self.data.results:
+            payload = self.data.results[kwargs['payload']]
+        else:
+            raise ValueError(f"{kwargs['payload']} not present in {self.data} `results` list.")
+
+
+        self.sheets[sheet_key]['components'].append({
+            'payload': payload,
+            'name': kwargs['name'],
+            'columns': parsed_columns,
+            'position': kwargs['position']
+        })
+
+    def parse_columns(self, columns, repeat):
+        """Parse columns of a Table component.
+
+        :param columns: the columns definition
+        :type columns: list
+
+        :param repeat:
+        :type repeat: integer
+
+        Attributes:
+        - 'name': a string or a list (required):
+            => 'name': 'A sheet name'
+            => 'name': {
+                    'func': 'a_function'
+                }
+        - 'key': a string
+        """
+
+        required_attrs = [
+            'name',
+            'key'
+        ]
 
         parsed_columns = []
         for index in range(0, repeat):
-            for column in kwargs['columns']:
-                tmp = copy.deepcopy(column)
+            for column in columns:
+                validate_attrs(required_attrs, column, 'column')
 
-                if 'name_func' in tmp:
-                    tmp['name'] = self.get_value(
-                        self.data,
-                        'write_{key}'.format(key=tmp['name_func']),
-                        None, {'index': index})
-                    del tmp['name_func']
+                tmp_col = copy.deepcopy(column)
+
+                if isinstance(tmp_col['name'], dict):
+                    tmp_col['name'] = self.get_value(
+                        klass=self.data,
+                        func='write_{key}'.format(key=tmp_col['name']['func']),
+                        obj=None,
+                        kwargs={'index': index})
 
                 if repeat > 1:
-                    name = f'{tmp["name"]} - {index + 1}'
+                    name = f'{tmp_col["name"]} - {index + 1}'
                 else:
-                    name = tmp['name']
+                    name = tmp_col['name']
 
-                tmp.update({
+                tmp_col.update({
                     'name': name,
                     'letter': next_letter(len(parsed_columns)),
                     'index': index
                 })
 
-                if group_name in self.groups:
-                    self.groups[group_name]['end'] = tmp['letter']
-                else:
-                    self.groups[group_name] = {
-                        'start': tmp['letter'],
-                        'end': tmp['letter']
-                    }
+                # if group_name in self.groups:
+                #     self.groups[group_name]['end'] = tmp_col['letter']
+                # else:
+                #     self.groups[group_name] = {
+                #         'start': tmp_col['letter'],
+                #         'end': tmp_col['letter']
+                #     }
 
-                parsed_columns.append(tmp)
-
-        sheet_key = kwargs['sheet_key']
-
-        self.sheets[sheet_key]['components'].append({
-            'payload': self.data.results[kwargs['payload']],
-            'name': kwargs['name'],
-            'columns': parsed_columns,
-            'stack': kwargs['stack']
-        })
+                parsed_columns.append(tmp_col)
+            return parsed_columns
 
     def write_header(self, sheet, column, next_available):
         col = column["letter"]
@@ -402,7 +562,6 @@ class SmartExcel():
             end_letter=column["letter"],
             end_pos=self.max_row
         )
-        # return f'{}{}:{column["letter"]}{self.max_row}'
 
     def set_validations(self, sheet, column):
         if column["key"] in self.validations:
@@ -418,13 +577,19 @@ class SmartExcel():
                 column['validations']['excel'])
 
     def build_meta(self):
+        """Populate the reserved sheet name `_meta`.
+        """
         from datetime import datetime
         now = datetime.now().strftime('%Y-%m-%d')
-        self.meta_ws.write_row('A1', ['dump_date', now])
-        self.meta_ws.write_row('A2', ['header_rows', self.header_row])
+        self.sheets['_meta']['fd'].write_row('A1', ['dump_date', now])
+        self.sheets['_meta']['fd'].write_row('A2', ['header_rows', self.header_row])
 
     def build_data(self):
+        """Populate the reserved sheet name `_data`.
+        """
         for sheet_key, sheet_data in self.sheets.items():
+            if sheet_data['reserved']:
+                continue
             for component in sheet_data['components']:
                 if 'rows' in component:
                     pass
@@ -434,23 +599,24 @@ class SmartExcel():
                             tmp = {
                                 'row': len(self.validations) + 1
                             }
-                            tmp.update(column['validations'])
+                            if 'validations' in column:
+                                tmp.update(column['validations'])
 
-                            if 'list_source_func' in column['validations']\
-                                and column['key'] not in self.validations:
-                                list_source = getattr(
-                                    self.data,
-                                    column['validations']['list_source_func'])()
+                                if 'list_source_func' in column['validations']\
+                                    and column['key'] not in self.validations:
+                                    list_source = getattr(
+                                        self.data,
+                                        column['validations']['list_source_func'])()
 
-                                tmp.update({
-                                    'meta_source': f'={self.data_worksheet_name}!$A${tmp["row"]}:${next_letter(len(list_source) - 1)}${tmp["row"]}'  # noqa
-                                })
+                                    tmp.update({
+                                        'meta_source': f'={self.data_worksheet_name}!$A${tmp["row"]}:${next_letter(len(list_source) - 1)}${tmp["row"]}'  # noqa
+                                    })
 
-                                self.data_ws.write_row(
-                                    f"A{tmp['row']}",
-                                    list_source)
+                                    self.sheets['_data']['fd'].write_row(
+                                        f"A{tmp['row']}",
+                                        list_source)
 
-                            self.validations[column['key']] = tmp
+                                self.validations[column['key']] = tmp
 
     def get_format(self, format_name):
         if format_name in self.formats:
@@ -505,7 +671,7 @@ class SmartExcel():
 
     def get_meta(self, klass, func, meta, kwargs):
         if func not in dir(klass):
-            raise Exception(f'method \'{func}\' not present in SmartExcelData class')  # noqa
+            raise Exception(f'method \'{func}\' not present in {klass} class')  # noqa
         try:
             meta = getattr(klass, func)(meta, kwargs)
         except IndexError:
@@ -516,15 +682,44 @@ class SmartExcel():
     def get_value(self, klass, func, obj, kwargs):
         return self.get_meta(klass, func, obj, kwargs)
 
-    def get_values_for_column(self, column, results):
+    def get_values_for_column(self, column, payload):
         return [
             self.get_value(
                 self.data,
                 'write_{key}'.format(key=column['key']),
                 obj,
                 {'index': index})
-            for index, obj in enumerate(results)  # self.data.results
+            for index, obj in enumerate(payload)  # self.data.results
         ]
+
+    def get_payload(self, func_name, instance, foreign_key):
+        """Calling the payload method `func_name` on the DataModel class.
+
+        The DataModel class is expected to define this function:
+        e.g: `func_name` = 'detail'
+        ```
+        def get_payload_detail(self, instance, foreign_key):
+            return 42
+        ```
+
+        :param func_name: identifier of a function
+        :type func_name: str
+
+        :param instance:
+        :type instance: dict | tuple | list
+
+        :param foreign_key: a key to link parent instance and its children.
+        :type foreign_key: str
+        """
+
+        func_name = f'get_payload_{func_name}'
+        payload = getattr(
+            self.data,
+            func_name)(
+                instance=instance,
+                foreign_key=foreign_key
+            )
+        return payload
 
 
 def check_sheet_names(sheet_names):
@@ -585,3 +780,22 @@ def next_letter(length):
     else:
         char = length + A
     return chr(char)
+
+def validate_attrs(required_attrs, element, element_type):
+    for attr in required_attrs:
+        if attr not in element:
+            raise ValueError(f'{attr} is required in a {element_type} definition.')
+
+def validate_type(element, attr, required_type):
+    if not isinstance(element[attr], required_type):
+        raise ValueError(f'{attr} must be a {required_type}')
+
+def validate_position(element):
+    attr = 'position'
+
+    validate_type(element, attr, dict)
+    validate_attrs(['x', 'y'], element[attr], f'component {attr}')
+    validate_type(element[attr], 'x', int)
+    validate_type(element[attr], 'y', int)
+
+    return True

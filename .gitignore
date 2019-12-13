@@ -1,5 +1,7 @@
 .vscode
 .env
 template.xlsx
+test_*.xlsx
+smartexcel/test_*.xlsx
 env/
 __pycache__/
