@@ -43,6 +43,13 @@ rm -rf smartexcel-fbf
 git clone https://github.com/kartoza/smartexcel-fbf.git
 ```
 
+### SmartExcel dependencies
+SmartExcel needs two dependencies:
+```
+pip3 install xlsxwriter
+pip3 install openpyxl
+```
+
 ### python/pl code
 
 The function's name is `fbf_generate_excel_report_for_flood`. It is already present in the database.
