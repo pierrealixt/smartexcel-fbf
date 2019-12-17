@@ -1,11 +1,13 @@
 # SmartExcel for Fbf
 
-Excel spreadsheet generator.
+Report generator for the Fbf project.
 
 This lib needs pyton 3.7 or greater.
 
+## Documentation
+Read the code and the tests.
 
-## Developent
+## Development
 ```
 python -m venv env
 source env/bin/activate
@@ -23,14 +25,18 @@ source .env
 ```
 
 ## Test
-There aren't proper tests...
-It is a simple way to run code.
-`TestFlood` needs access to the Fbf database.
 
+### unit tests
+```bash
+python -m smartexcel.test_smart_excel
 ```
-python -m smartexcel.test_smart_excel TestFlood
+
+
+### Fbf
+```bash
+python -m smartexcel.test_fbf TestFlood
 ```
-A file `template.xlsx` is created at the root of this project. Open it and make sure it looks like what you want.
+A file `test_fbf.xlsx` is created at the root of this project. Open it and make sure it looks like what you want.
 
 
 ## Deployment

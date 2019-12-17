@@ -1,21 +1,21 @@
 FBF_DEFINITION = [
     {
-        'func': 'add_format',
-        'kwargs': {
-            'key': 'number',
-            'format': {
-            },
-            'num_format': '0'
-        }
+        'type': 'format',
+        'key': 'number',
+        'format': {
+        },
+        'num_format': '0'
     },
     {
-        'func': 'add_sheet',
-        'sheet_name_func': 'flood_summary',
+        'type': 'sheet',
+        'name': {
+            'func': 'flood_summary'
+        },
         'components': [
             {
-                'name': 'Bottom right',
-                'func': 'add_group_row',
-                'stack': {
+                'name': 'Flood metadata',
+                'type': 'map',
+                'position': {
                     'x': 0,
                     'y': 0
                 },
@@ -24,7 +24,8 @@ FBF_DEFINITION = [
                     {
                         'name': 'Acquisition Date',
                         'key': 'flood_acquisition_date',
-                        'style': {}
+                        'style': {},
+
                     },
                     {
                         'name': 'Forecast Date',
@@ -55,9 +56,9 @@ FBF_DEFINITION = [
             },
             {
                 'name': 'Flood Summary View',
-                'func': 'add_group_column',
+                'type': 'table',
                 'payload': 'districts',
-                'stack': {
+                'position': {
                     'x': 0,
                     'y': 1
                 },
@@ -94,14 +95,16 @@ FBF_DEFINITION = [
                 ],
                 'recursive': {
                     # create a sheet for each instance of payload
-                    'sheet_name_func': 'subdistrict_summary',
+                    'name': {
+                        'func': 'subdistrict_summary'
+                    },
                     'foreign_key': 'district_code',
                     'payload_func': 'subdistricts',
                     'components': [
                         {
                             'name': 'Simple array',
-                            'func': 'add_group_column',
-                            'stack': {
+                            'type': 'table',
+                            'position': {
                                 'x': 0,
                                 'y': 0
                             },
@@ -138,14 +141,16 @@ FBF_DEFINITION = [
 
                             ],
                             'recursive': {
-                                'sheet_name_func': 'village_summary',
+                                'name': {
+                                    'func': 'village_summary'
+                                },
                                 'foreign_key': 'sub_district_code',
                                 'payload_func': 'villages',
                                 'components': [
                                     {
                                         'name': 'Villages',
-                                        'func': 'add_group_column',
-                                        'stack': {
+                                        'type': 'table',
+                                        'position': {
                                             'x': 0,
                                             'y': 0
                                         },
