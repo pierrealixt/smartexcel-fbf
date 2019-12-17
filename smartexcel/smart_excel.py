@@ -155,6 +155,8 @@ class SmartExcel():
                 continue
             fd_current_sheet = sheet_data['fd']
 
+            fd_current_sheet.hide_gridlines()
+
             nb_components = len(sheet_data['components'])
             current_component = None
             next_available = {
@@ -168,37 +170,59 @@ class SmartExcel():
                         if component['position']['x'] == x and component['position']['y'] == y:
 
                             current_component = component
+
+
                             if 'rows' in component:
+                                map_key_format = self.get_component_format(component, 'map_key')
+                                map_value_format = self.get_component_format(component, 'map_value')
 
                                 for index, row in enumerate(component['rows']):
                                     n_col = next_letter(next_available['col'])
                                     n_row = next_available['row'] + index + 1
 
                                     cell_pos = f"{n_col}{n_row}"
+                                    len_value = 1
+                                    if 'name' in row:
+                                        len_value += 1
 
-                                    if row['name']:
-                                        value = [
-                                            f"{row['name']}",
-                                            self.get_value(self.data, f"write_{row['key']}", component['payload'][0], {})
-                                        ]
-                                    else:
-                                        value = [
-                                            self.get_value(self.data, f"write_{row['key']}", component['payload'][0], {})
-                                        ]
-                                    fd_current_sheet.write_row(cell_pos, value)
-                                next_available['col'] += len(value) + 2
+                                        map_key = row['name']
+
+                                        fd_current_sheet.write(cell_pos, map_key, map_key_format)
+
+                                        map_value = self.get_value(
+                                            self.data,
+                                            f"write_{row['key']}",
+                                            component['payload'][0],
+                                            {})
+
+                                        n_col = next_letter(next_available['col'] + 1)
+                                        cell_pos = f"{n_col}{n_row}"
+
+                                    fd_current_sheet.write(cell_pos, map_value, map_value_format)
+
+
+                                next_available['col'] += len_value + 2
                                 next_available['row'] += len(component['rows']) + 2
 
                             elif 'columns' in component:
+                                header_format = self.get_component_format(component, 'header')
+                                component_cell_format = self.get_component_format(component, 'cell')
+
                                 for column in component['columns']:
-                                    self.write_header(fd_current_sheet, column, next_available)
+                                    self.write_header(
+                                        fd_current_sheet,
+                                        column,
+                                        next_available,
+                                        header_format)
+
+                                    # validations
                                     self.set_validations(fd_current_sheet, column)
 
                                     values = self.get_values_for_column(column, component['payload'])
+                                    self.set_column_width(fd_current_sheet, column, values)
 
-                                    self.set_column_width(fd_current_sheet, column['letter'], values)
-
-                                    cell_format = self.get_column_format(column)
+                                    # format
+                                    cell_format = self.get_column_format(column) or component_cell_format
 
                                     for index, value in enumerate(values):
                                         cell_pos = f'{column["letter"]}{index + next_available["row"] + 1 + self.header_row}'
@@ -348,6 +372,8 @@ class SmartExcel():
     def parse_format(self, cell_format):
         """Parse a format.
 
+        A format's definition must be define before a sheet's definition.
+
         :param cell_format: the format definitiob
         :type cell_format: a dict
 
@@ -414,7 +440,8 @@ class SmartExcel():
             'payload': self.data.results[kwargs['payload']],
             'name': kwargs['name'],
             'rows': parsed_rows,
-            'position': kwargs['position']
+            'position': kwargs['position'],
+            'format': kwargs['format']
         })
 
     def parse_table(self, **kwargs):
@@ -428,6 +455,11 @@ class SmartExcel():
         - 'payload': a string (required)
         - 'group_name'
         - 'repeat': a string or a dict
+        - 'format: a dict
+            => {
+                'header':
+                'cell'
+            }
         """
 
         table_required_attrs = [
@@ -470,7 +502,8 @@ class SmartExcel():
             'payload': payload,
             'name': kwargs['name'],
             'columns': parsed_columns,
-            'position': kwargs['position']
+            'position': kwargs['position'],
+            'format': kwargs['format']
         })
 
     def parse_columns(self, columns, repeat):
@@ -532,21 +565,19 @@ class SmartExcel():
                 parsed_columns.append(tmp_col)
             return parsed_columns
 
-    def write_header(self, sheet, column, next_available):
+    def write_header(self, sheet, column, next_available, header_format):
         col = column["letter"]
-        # next_letter(next_available['col'])
-        #
 
         row = self.header_row + next_available['row']
 
         cell_pos = f'{col}{row}'
 
-        if 'required' in column:
-            cell_format = 'header_required'
-        else:
-            cell_format = 'header'
-
-        sheet.write(cell_pos, column['name'], self.get_format(cell_format))
+        # if 'required' in column:
+        #     cell_format = 'header_required'
+        # else:
+        #     cell_format = 'header'
+        # self.get_format(cell_format)
+        sheet.write(cell_pos, column['name'], header_format)
 
     def set_list_source_func(self, sheet, cell_range, column):
         if 'list_source_func' in column['validations']:
@@ -630,6 +661,12 @@ class SmartExcel():
         else:
             return None
 
+    def get_component_format(self, component, format_type):
+        if 'format' in component:
+            if format_type in component['format']:
+                return self.get_format(component['format'][format_type])
+
+
     def build_top_header(self):
         if self.groups:
             self.header_row += 1
@@ -657,16 +694,19 @@ class SmartExcel():
         self.main_ws.freeze_panes(1, 0)
         self.main_ws.freeze_panes(2, 0)
 
-    def set_column_width(self, fd_current_sheet, column_letter, values):
-        try:
-            width = len(max(values, key=len))
-            if width < 10:
+    def set_column_width(self, fd_current_sheet, column, values):
+        if 'width' in column:
+            width = column['width']
+        else:
+            try:
+                width = len(max(values, key=len))
+                if width < 10:
+                    width = 10
+            except (TypeError, ValueError):
                 width = 10
-        except (TypeError, ValueError):
-            width = 10
 
         fd_current_sheet.set_column(
-            f'{column_letter}:{column_letter}',
+            f"{column['letter']}:{column['letter']}",
             width)
 
     def get_meta(self, klass, func, meta, kwargs):
