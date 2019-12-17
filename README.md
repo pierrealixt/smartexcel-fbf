@@ -2,6 +2,9 @@
 
 Excel spreadsheet generator.
 
+This lib needs pyton 3.7 or greater.
+
+
 ## Developent
 ```
 python -m venv env
