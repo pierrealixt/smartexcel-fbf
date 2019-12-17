@@ -26,6 +26,7 @@ class SmartExcel():
     """  # noqa
     header_row = 1
     max_row = 100
+    margin_component = 2
     reserved_sheets = ['_data', '_meta']
     READMODE = False
     WRITEMODE = False
@@ -199,7 +200,7 @@ class SmartExcel():
 
 
                                 next_available['col'] += len_value + 2
-                                next_available['row'] += len(component['rows']) + 2
+                                next_available['row'] += len(component['rows']) + self.margin_component
 
                             elif 'columns' in component:
                                 header_format = self.get_component_format(component, 'header')
@@ -225,9 +226,8 @@ class SmartExcel():
                                         cell_pos = f'{column["letter"]}{index + next_available["row"] + 1 + self.header_row}'
                                         fd_current_sheet.write(cell_pos, value, cell_format)
 
-                                next_available['row'] += len(values) + 1 + 2 # self.SPACE_COMPONENT
+                                next_available['row'] += len(values) + 1 + self.margin_component
                             elif 'text' in component:
-
                                 start_col = next_letter(next_available['col'])
                                 start_row = next_available['row']
 
@@ -239,7 +239,7 @@ class SmartExcel():
                                 fd_current_sheet.merge_range(cell_range, component['text'], range_format)
 
                                 # next_available['col'] += len_value + 2
-                                next_available['row'] += component['size']['height'] + 2
+                                next_available['row'] += component['size']['height'] + self.margin_component
 
 
         self.workbook.close()
@@ -344,6 +344,7 @@ class SmartExcel():
 
                     self.data.results[component['recursive']['payload_func']] = payload
 
+                    # inherit parent's format
                     if 'format' in component:
                         component_format = component['format']
                     elif 'format' in component['recursive']:
@@ -352,16 +353,20 @@ class SmartExcel():
                         component_format = None
 
                     for rec_component in component['recursive']['components']:
-                        rec_component['payload'] = component['recursive']['payload_func']
-                        rec_component['format'] = component_format
+                        if rec_component['type'] in ['map', 'table']:
+                            rec_component['payload'] = component['recursive']['payload_func']
+
+                        if rec_component['type'] == component['type']:
+                            rec_component['format'] = component_format
+
+                        rec_component['instance'] = instance
+
 
                     sheet_name = getattr(
                         self.data,
                         f"get_sheet_name_for_{component['recursive']['name']['func']}")(
                             instance
                         )
-
-
 
                     definition = {
                         'name': sheet_name,
@@ -555,7 +560,7 @@ class SmartExcel():
 
         required_attrs = [
             'size',
-            'text'
+            # 'text_func'
         ]
 
         validate_attrs(required_attrs, kwargs, 'text component')
@@ -568,10 +573,16 @@ class SmartExcel():
         else:
             text_format = None
 
-        text = getattr(
-            self.data,
-            f"get_text_for_{kwargs['text']}"
-        )()
+        if 'instance' in kwargs:
+            text = getattr(
+                self.data,
+                f"get_text_for_{kwargs['text_func']}"
+            )(kwargs['instance'])
+        else:
+            text = getattr(
+                self.data,
+                f"get_text_for_{kwargs['text_func']}"
+            )()
 
         self.sheets[sheet_key]['components'].append({
             'text': text,
