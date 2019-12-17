@@ -23,7 +23,9 @@ FBF_DEFINITION = [
             'align': 'center',
             'valign': 'vcenter',
             'bold': True,
-            'font_size': 14
+            'font_size': 14,
+            'border': 1,
+            'border_color': "#527d01"
         }
     },
     {
@@ -50,7 +52,7 @@ FBF_DEFINITION = [
                     'width': 5,
                     'height': 2
                 },
-                'text': 'main_sheet_title',
+                'text_func': 'main_sheet_title',
                 'format': 'sheet_title'
             },
             {
@@ -142,11 +144,25 @@ FBF_DEFINITION = [
                     'payload_func': 'subdistricts',
                     'components': [
                         {
-                            'name': 'Simple array',
-                            'type': 'table',
+                            'type': 'text',
+                            'name': 'District Sheet Title',
                             'position': {
                                 'x': 0,
                                 'y': 0
+                            },
+                            'size': {
+                                'width': 5,
+                                'height': 2
+                            },
+                            'text_func': 'district_sheet_title',
+                            'format': 'sheet_title'
+                        },
+                        {
+                            'name': 'Sub-districts',
+                            'type': 'table',
+                            'position': {
+                                'x': 0,
+                                'y': 1
                             },
                             'columns': [
                                 {
@@ -188,11 +204,25 @@ FBF_DEFINITION = [
                                 'payload_func': 'villages',
                                 'components': [
                                     {
+                                        'type': 'text',
+                                        'name': 'Sub-district Sheet Title',
+                                        'position': {
+                                            'x': 0,
+                                            'y': 0
+                                        },
+                                        'size': {
+                                            'width': 5,
+                                            'height': 2
+                                        },
+                                        'text_func': 'sub_district_sheet_title',
+                                        'format': 'sheet_title'
+                                    },
+                                    {
                                         'name': 'Villages',
                                         'type': 'table',
                                         'position': {
                                             'x': 0,
-                                            'y': 0
+                                            'y': 1
                                         },
                                         'columns': [
                                             {

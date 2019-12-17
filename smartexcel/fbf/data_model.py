@@ -272,3 +272,8 @@ class FbfFloodData():
     def get_text_for_main_sheet_title(self):
         return 'FbF Flood Summary Report'
 
+    def get_text_for_district_sheet_title(self, instance):
+        return f'District: {instance.district_name}'
+
+    def get_text_for_sub_district_sheet_title(self, instance):
+        return f'Sub-district: {instance.sub_district_name}'
