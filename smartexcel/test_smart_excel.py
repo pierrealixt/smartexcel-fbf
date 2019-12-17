@@ -62,6 +62,10 @@ class DataModel():
     def write_first_column(self, instance, kwargs={}):
         return instance
 
+    def write_second_column(self, instance, kwargs={}):
+        return instance
+
+
     def get_payload_detail(self, instance, foreign_key):
         item_id = instance[foreign_key]
 
@@ -83,6 +87,9 @@ class DataModel():
     def write_result(self, instance, kwargs={}):
         return instance['result']
 
+    def write_row_one(self, instance, kwargs={}):
+        return instance
+
 
 def get_smart_excel(definition, data_model, output='template.xlsx'):
     if isinstance(definition, dict):
@@ -93,7 +100,6 @@ def get_smart_excel(definition, data_model, output='template.xlsx'):
         definition=definition,
         data=data_model()
     )
-
 
 class TestParseSheetDefinition(unittest.TestCase):
     def setUp(self):
@@ -348,6 +354,98 @@ class TestParseFormatDefinition(unittest.TestCase):
         self.assertEqual(len(excel.formats), 1)
         self.assertTrue('my_custom_format' in excel.formats)
 
+    def test_set_column_width(self):
+        text = 'Custom format lolilol'
+        font_size = 16  # pixels
+        expected_width = 33  # 203 pixels
+
+
+    def test_output(self):
+        definition = []
+        definition.append(self.format_def)
+        definition.append({
+            'type': 'format',
+            'key': 'custom_header_format',
+            'format': {
+                'bold': True,
+                'font_size': 16,
+                'align': 'center'
+            }
+        })
+        definition.append({
+            'type': 'format',
+            'key': 'custom_cell_format',
+            'format': {
+                'italic': True,
+            }
+        })
+        definition.append({
+            'type': 'format',
+            'key': 'custom_map_value_format',
+            'format': {
+                'font_color': 'red'
+            }
+        })
+        definition.append({
+            'type': 'sheet',
+            'name': 'Hello',
+            'components': [
+                {
+                    'type': 'table',
+                    'name': 'My table',
+                    'position': {
+                        'x': 0,
+                        'y': 0
+                    },
+                    'payload': 'my_custom_payload_for_table',
+                    'format': {
+                        'header': 'custom_header_format',
+                        'cell': 'custom_cell_format'
+                    },
+                    'columns': [
+                        {
+                            'name': 'Custom format lolilol',
+                            'key': 'first_column',
+                            'format': 'my_custom_format',
+                            'width': 33
+                        },
+                        {
+                            'name': 'Default format',
+                            'key': 'first_column',
+                            'width': 30
+                        },
+                    ]
+                },
+                {
+                    'type': 'map',
+                    'name': 'My Map',
+                    'position': {
+                        'x': 0,
+                        'y': 1
+                    },
+                    'format': {
+                        'map_key': 'custom_header_format',
+                        'map_value': 'custom_map_value_format'
+                    },
+                    'payload': 'my_custom_payload_for_map',
+                    'rows': [
+                        {
+                            'name': 'Row 1',
+                            'key': 'row_one'
+                        },
+                        {
+                            'key': 'row_one'
+                        }
+                    ]
+                }
+            ]
+        })
+        excel = get_smart_excel(
+            definition,
+            DataModel,
+            output='test_format.xlsx')
+        excel.dump()
+
 
 class TestDump(unittest.TestCase):
     def runTest(self):
@@ -358,7 +456,7 @@ class TestDump(unittest.TestCase):
         if os.path.exists(path):
             os.remove(path)
 
-        self.format_def = {
+        sheet_def = {
             'type': 'sheet',
             'name': 'Bonjour',
             'components': [
@@ -382,7 +480,7 @@ class TestDump(unittest.TestCase):
 
 
         excel = get_smart_excel(
-            self.format_def,
+            sheet_def,
             DataModel,
             output=path)
         excel.dump()

@@ -1,6 +1,15 @@
 FBF_DEFINITION = [
     {
         'type': 'format',
+        'key': 'table_header',
+        'format': {
+            'bold': True,
+            'font_size': 16,
+            'align': 'center'
+        }
+    },
+    {
+        'type': 'format',
         'key': 'number',
         'format': {
         },
@@ -20,37 +29,33 @@ FBF_DEFINITION = [
                     'y': 0
                 },
                 'payload': 'flood',
+                'format': {
+                    'keys': 'header'
+                },
                 'rows': [
                     {
                         'name': 'Acquisition Date',
                         'key': 'flood_acquisition_date',
-                        'style': {},
-
                     },
                     {
                         'name': 'Forecast Date',
                         'key': 'flood_forecast_date',
-                        'style': {}
                     },
                     {
                         'name': 'Source',
                         'key': 'flood_source',
-                        'style': {}
                     },
                     {
                         'name': 'Notes',
                         'key': 'flood_notes',
-                        'style': {}
                     },
                     {
                         'name': 'Link',
                         'key': 'flood_link',
-                        'style': {}
                     },
                     {
                         'name': 'Trigger Status',
                         'key': 'flood_trigger_status',
-                        'style': {}
                     }
                 ]
             },
@@ -62,34 +67,37 @@ FBF_DEFINITION = [
                     'x': 0,
                     'y': 1
                 },
+                'format': {
+                    'header': 'table_header'
+                },
                 'columns': [
                     {
                         'name': 'District Name',
                         'key': 'district_name',
-                        'validations': {}
+                        'width': 20
                     },
                     {
                         'name': 'District ID',
                         'key': 'district_code',
-                        'validations': {},
+                        'width': 20,
                         'format': 'number'
                     },
                     {
                         'name': 'Total Buildings',
                         'key': 'total_buildings',
-                        'validations': {},
+                        'width': 20,
                         'format': 'number'
                     },
                     {
                         'name': 'Flooded Buildings',
                         'key': 'flooded_buildings',
-                        'validations': {},
+                        'width': 25,
                         'format': 'number'
                     },
                     {
                         'name': 'Not Flooded Buildings',
                         'key': 'not_flooded_buildings',
-                        'validations': {},
+                        'width': 30,
                         'format': 'number'
                     },
                 ],
