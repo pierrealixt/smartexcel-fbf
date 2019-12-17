@@ -90,6 +90,9 @@ class DataModel():
     def write_row_one(self, instance, kwargs={}):
         return instance
 
+    def get_text_for_sheet_title(self):
+        return 'Hello World!'
+
 
 def get_smart_excel(definition, data_model, output='template.xlsx'):
     if isinstance(definition, dict):
@@ -241,6 +244,28 @@ class TestParseSheetDefinition(unittest.TestCase):
         self.assertEqual(len(excel.sheets['default']['components']), 1)
         self.assertEqual(len(excel.sheets['default']['components'][0]['rows']), 1)
 
+    def test_text_component(self):
+        self.sheet_def['key'] = 'default'
+        text_comp = {
+            'type': 'text',
+            'name': 'Sheet title',
+            'position': {
+                'x': 0,
+                'y': 0
+            },
+            'size': {
+                'width': 7,
+                'height': 1
+            },
+            'text': 'sheet_title'
+
+        }
+        self.sheet_def['components'] = [
+            text_comp
+        ]
+        excel = get_smart_excel(self.sheet_def, DataModel)
+        self.assertEqual(len(excel.sheets['default']['components']), 1)
+
     def test_component_position(self):
         self.sheet_def['key'] = 'default'
         components = [
@@ -264,7 +289,13 @@ class TestParseSheetDefinition(unittest.TestCase):
                 'position': {
                     'x': 0,
                     'y': 0
-                }
+                },
+                'payload': 'my_custom_payload_for_map',
+                'rows': [
+                    {
+                        'name': 'Row 1'
+                    }
+                ]
             }
         ]
 
@@ -353,12 +384,6 @@ class TestParseFormatDefinition(unittest.TestCase):
         excel = get_smart_excel(self.format_def, DataModel)
         self.assertEqual(len(excel.formats), 1)
         self.assertTrue('my_custom_format' in excel.formats)
-
-    def test_set_column_width(self):
-        text = 'Custom format lolilol'
-        font_size = 16  # pixels
-        expected_width = 33  # 203 pixels
-
 
     def test_output(self):
         definition = []
@@ -456,31 +481,57 @@ class TestDump(unittest.TestCase):
         if os.path.exists(path):
             os.remove(path)
 
-        sheet_def = {
-            'type': 'sheet',
-            'name': 'Bonjour',
-            'components': [
-                {
-                    'type': 'table',
-                    'name': 'My table',
-                    'position': {
-                        'x': 0,
-                        'y': 0
-                    },
-                    'payload': 'my_custom_payload_for_table',
-                    'columns': [
-                        {
-                            'name': 'Column 1',
-                            'key': 'first_column'
-                        }
-                    ]
+        definition = [
+            {
+                'type': 'format',
+                'key': 'sheet_title',
+                'format': {
+                    'align': 'center',
+                    'valign': 'vcenter',
+                    'bold': True,
+                    'font_size': 14
                 }
-            ]
-        }
+            },
+            {
+                'type': 'sheet',
+                'name': 'Bonjour',
+                'components': [
+                    {
+                        'type': 'text',
+                        'name': 'Sheet title',
+                        'position': {
+                            'x': 0,
+                            'y': 0
+                        },
+                        'text': 'sheet_title',
+                        'size': {
+                            'width': 5,
+                            'height': 2
+                        },
+                        'format': 'sheet_title'
+                    },
+                    {
+                        'type': 'table',
+                        'name': 'My table',
+                        'position': {
+                            'x': 0,
+                            'y': 1
+                        },
+                        'payload': 'my_custom_payload_for_table',
+                        'columns': [
+                            {
+                                'name': 'Column 1',
+                                'key': 'first_column'
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
 
 
         excel = get_smart_excel(
-            sheet_def,
+            definition,
             DataModel,
             output=path)
         excel.dump()
