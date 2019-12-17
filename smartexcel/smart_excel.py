@@ -155,8 +155,6 @@ class SmartExcel():
                 continue
             fd_current_sheet = sheet_data['fd']
 
-            fd_current_sheet.hide_gridlines()
-
             nb_components = len(sheet_data['components'])
             current_component = None
             next_available = {
@@ -170,7 +168,6 @@ class SmartExcel():
                         if component['position']['x'] == x and component['position']['y'] == y:
 
                             current_component = component
-
 
                             if 'rows' in component:
                                 map_key_format = self.get_component_format(component, 'map_key')
@@ -229,6 +226,21 @@ class SmartExcel():
                                         fd_current_sheet.write(cell_pos, value, cell_format)
 
                                 next_available['row'] += len(values) + 1 + 2 # self.SPACE_COMPONENT
+                            elif 'text' in component:
+
+                                start_col = next_letter(next_available['col'])
+                                start_row = next_available['row']
+
+                                end_col = next_letter(next_available['col'] + (component['size']['width'] - 1))
+                                end_row = next_available['row'] + (component['size']['height'] - 1)
+
+                                cell_range = f'{start_col}{start_row}:{end_col}{end_row}'
+                                range_format = self.get_format(component['format'])
+                                fd_current_sheet.merge_range(cell_range, component['text'], range_format)
+
+                                # next_available['col'] += len_value + 2
+                                next_available['row'] += component['size']['height'] + 2
+
 
         self.workbook.close()
 
@@ -282,9 +294,10 @@ class SmartExcel():
         }
 
         if 'components' in definition:
-            self.parse_components(definition['components'], **{
+            kwargs = {
                 'sheet_key': sheet_key
-            })
+            }
+            self.parse_components(definition['components'], **kwargs)
 
     def parse_components(self, components, **kwargs):
         """Parse sheet's components."""
@@ -293,11 +306,9 @@ class SmartExcel():
             'type',
             'name',
             'position',
-            'payload'
         ]
 
         for component in components:
-
             kwargs.update(component)
 
             validate_attrs(component_required_attrs, kwargs, 'component')
@@ -319,6 +330,8 @@ class SmartExcel():
                 self.parse_table(**kwargs)
             elif component['type'] == 'map':
                 self.parse_map(**kwargs)
+            elif component['type'] == 'text':
+                self.parse_text(**kwargs)
             else:
                 raise ValueError(f"Type `{component['type']}` not supported.")
             if 'recursive' in component:
@@ -331,8 +344,16 @@ class SmartExcel():
 
                     self.data.results[component['recursive']['payload_func']] = payload
 
+                    if 'format' in component:
+                        component_format = component['format']
+                    elif 'format' in component['recursive']:
+                        component_format = component['recursive']['format']
+                    else:
+                        component_format = None
+
                     for rec_component in component['recursive']['components']:
                         rec_component['payload'] = component['recursive']['payload_func']
+                        rec_component['format'] = component_format
 
                     sheet_name = getattr(
                         self.data,
@@ -340,11 +361,15 @@ class SmartExcel():
                             instance
                         )
 
+
+
+                    definition = {
+                        'name': sheet_name,
+                        'components': component['recursive']['components']
+                    }
+
                     self.parse_sheet(
-                        definition={
-                            'name': sheet_name,
-                            'components': component['recursive']['components']
-                        },
+                        definition=definition,
                         index=index)
 
 
@@ -418,10 +443,16 @@ class SmartExcel():
             }
         - 'rows': a list of dict (required)
         - 'payload': a string (required)
+        - 'format': a dict
+            => {
+                'map_key',
+                'map_value'
+            }
         """
 
         map_required_attrs = [
             'rows',
+            'payload'
         ]
         validate_attrs(map_required_attrs, kwargs, 'map component')
 
@@ -435,13 +466,18 @@ class SmartExcel():
 
             parsed_rows.append(tmp)
 
+        if 'format' in kwargs:
+            map_format = kwargs['format']
+        else:
+            map_format = None
+
         sheet_key = kwargs['sheet_key']
         self.sheets[sheet_key]['components'].append({
             'payload': self.data.results[kwargs['payload']],
             'name': kwargs['name'],
             'rows': parsed_rows,
             'position': kwargs['position'],
-            'format': kwargs['format']
+            'format': map_format
         })
 
     def parse_table(self, **kwargs):
@@ -464,6 +500,7 @@ class SmartExcel():
 
         table_required_attrs = [
             'columns',
+            'payload'
         ]
         validate_attrs(table_required_attrs, kwargs, 'table component')
 
@@ -497,13 +534,50 @@ class SmartExcel():
         else:
             raise ValueError(f"{kwargs['payload']} not present in {self.data} `results` list.")
 
+        if 'format' in kwargs:
+            table_format = kwargs['format']
+        else:
+            table_format = None
 
         self.sheets[sheet_key]['components'].append({
             'payload': payload,
             'name': kwargs['name'],
             'columns': parsed_columns,
             'position': kwargs['position'],
-            'format': kwargs['format']
+            'format': table_format
+        })
+
+
+    def parse_text(self, **kwargs):
+        """Parse a Text component.
+
+        """
+
+        required_attrs = [
+            'size',
+            'text'
+        ]
+
+        validate_attrs(required_attrs, kwargs, 'text component')
+        validate_size(kwargs)
+
+        sheet_key = kwargs['sheet_key']
+
+        if 'format' in kwargs:
+            text_format = kwargs['format']
+        else:
+            text_format = None
+
+        text = getattr(
+            self.data,
+            f"get_text_for_{kwargs['text']}"
+        )()
+
+        self.sheets[sheet_key]['components'].append({
+            'text': text,
+            'size': kwargs['size'],
+            'position': kwargs['position'],
+            'format': text_format
         })
 
     def parse_columns(self, columns, repeat):
@@ -580,7 +654,7 @@ class SmartExcel():
         sheet.write(cell_pos, column['name'], header_format)
 
     def set_list_source_func(self, sheet, cell_range, column):
-        if 'list_source_func' in column['validations']:
+        if 'validations' in column and 'list_source_func' in column['validations']:
             sheet.data_validation(cell_range, {
                 'validate': 'list',
                 'source': f'={self.validations[column["key"]]["meta_source"]}'
@@ -602,7 +676,7 @@ class SmartExcel():
             self.set_excel_validations(sheet, cell_range, column)
 
     def set_excel_validations(self, sheet, cell_range, column):
-        if 'excel' in column['validations']:
+        if 'validations' in column and 'excel' in column['validations']:
             sheet.data_validation(
                 cell_range,
                 column['validations']['excel'])
@@ -662,7 +736,7 @@ class SmartExcel():
             return None
 
     def get_component_format(self, component, format_type):
-        if 'format' in component:
+        if 'format' in component and component['format']:
             if format_type in component['format']:
                 return self.get_format(component['format'][format_type])
 
@@ -826,16 +900,31 @@ def validate_attrs(required_attrs, element, element_type):
         if attr not in element:
             raise ValueError(f'{attr} is required in a {element_type} definition.')
 
+
 def validate_type(element, attr, required_type):
     if not isinstance(element[attr], required_type):
         raise ValueError(f'{attr} must be a {required_type}')
 
+
 def validate_position(element):
     attr = 'position'
+    keys = ['x', 'y']
 
     validate_type(element, attr, dict)
-    validate_attrs(['x', 'y'], element[attr], f'component {attr}')
-    validate_type(element[attr], 'x', int)
-    validate_type(element[attr], 'y', int)
+    validate_attrs(keys, element[attr], f'component {attr}')
+    for key in keys:
+        validate_type(element[attr], key, int)
+
+    return True
+
+
+def validate_size(element):
+    attr = 'size'
+    keys = ['width', 'height']
+
+    validate_type(element, attr, dict)
+    validate_attrs(keys, element[attr], f'component {attr}')
+    for key in keys:
+        validate_type(element[attr], key, int)
 
     return True

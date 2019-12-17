@@ -4,8 +4,26 @@ FBF_DEFINITION = [
         'key': 'table_header',
         'format': {
             'bold': True,
-            'font_size': 16,
+            'font_size': 14,
             'align': 'center'
+        }
+    },
+    {
+        'type': 'format',
+        'key': 'map_keys',
+        'format': {
+            'bold': True,
+            'font_size': 14,
+        }
+    },
+    {
+        'type': 'format',
+        'key': 'sheet_title',
+        'format': {
+            'align': 'center',
+            'valign': 'vcenter',
+            'bold': True,
+            'font_size': 14
         }
     },
     {
@@ -22,15 +40,29 @@ FBF_DEFINITION = [
         },
         'components': [
             {
-                'name': 'Flood metadata',
-                'type': 'map',
+                'type': 'text',
+                'name': 'Sheet Title',
                 'position': {
                     'x': 0,
                     'y': 0
                 },
+                'size': {
+                    'width': 5,
+                    'height': 2
+                },
+                'text': 'main_sheet_title',
+                'format': 'sheet_title'
+            },
+            {
+                'name': 'Flood metadata',
+                'type': 'map',
+                'position': {
+                    'x': 0,
+                    'y': 1
+                },
                 'payload': 'flood',
                 'format': {
-                    'keys': 'header'
+                    'map_key': 'map_keys'
                 },
                 'rows': [
                     {
@@ -65,7 +97,7 @@ FBF_DEFINITION = [
                 'payload': 'districts',
                 'position': {
                     'x': 0,
-                    'y': 1
+                    'y': 2
                 },
                 'format': {
                     'header': 'table_header'
@@ -120,30 +152,30 @@ FBF_DEFINITION = [
                                 {
                                     'name': 'Sub-district Name',
                                     'key': 'sub_district_name',
-                                    'validations': {}
+                                    'width': 22,
                                 },
                                 {
                                     'name': 'Sub-district ID',
                                     'key': 'sub_district_id',
-                                    'validations': {},
+                                    'width': 20,
                                     'format': 'number'
                                 },
                                 {
                                     'name': 'Total Buildings',
                                     'key': 'total_buildings',
-                                    'validations': {},
+                                    'width': 20,
                                     'format': 'number'
                                 },
                                 {
                                     'name': 'Flooded Buildings',
                                     'key': 'flooded_buildings',
-                                    'validations': {},
+                                    'width': 25,
                                     'format': 'number'
                                 },
                                 {
                                     'name': 'Not Flooded Buildings',
                                     'key': 'not_flooded_buildings',
-                                    'validations': {},
+                                    'width': 30,
                                     'format': 'number'
                                 },
 
@@ -166,29 +198,29 @@ FBF_DEFINITION = [
                                             {
                                                 'name': 'Village Name',
                                                 'key': 'village_name',
-                                                'validations': {}
+                                                'width': 20,
                                             },
                                             {
                                                 'name': 'Village ID',
                                                 'key': 'village_id',
-                                                'validations': {},
+                                                'width': 20,
                                             },
                                             {
                                                 'name': 'Total Buildings',
                                                 'key': 'total_buildings',
-                                                'validations': {},
+                                                'width': 20,
                                                 'format': 'number'
                                             },
                                             {
                                                 'name': 'Flooded Buildings',
                                                 'key': 'flooded_buildings',
-                                                'validations': {},
+                                                'width': 25,
                                                 'format': 'number'
                                             },
                                             {
                                                 'name': 'Not Flooded Buildings',
                                                 'key': 'not_flooded_buildings',
-                                                'validations': {},
+                                                'width': 30,
                                                 'format': 'number'
                                             },
 

@@ -34,7 +34,6 @@ class FbfFloodData():
         }
 
     def execute_query(self, query):
-        print(query)
         if self.pl_python_env:
             res = plpy.execute(query)
             try:
@@ -269,4 +268,7 @@ class FbfFloodData():
 
     def write_clinic_dr_flooded_building_count(self, instance, kwargs={}):
         return instance.clinic_dr_flooded_building_count
+
+    def get_text_for_main_sheet_title(self):
+        return 'FbF Flood Summary Report'
 
