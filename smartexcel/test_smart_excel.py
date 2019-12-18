@@ -94,12 +94,34 @@ class DataModel():
         return 'Hello World!'
 
     def get_image_partner_logos(self):
-        # return '/fbf/images/partner_logos.png'
         import os
         return os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             'fbf/images',
             'partner_logos.png')
+
+    def get_image_flood_map(self):
+        # 1. we need the area's extent
+        # select * from flood_event_extent_v where id = 15;
+        # 2. http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=kartoza%3Adbf_map&exceptions=application%2Fvnd.ogc.se_inimage&SRS=EPSG%3A4326&STYLES=&WIDTH=768&HEIGHT=485&BBOX=81.123046875%2C-20.2587890625%2C148.623046875%2C22.3681640625
+
+        import shutil
+
+        import requests
+        import os
+        path = os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            'fbf/images',
+            'flood_map.png')
+
+
+        url = 'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=kartoza%3Adbf_map&exceptions=application%2Fvnd.ogc.se_inimage&SRS=EPSG%3A4326&STYLES=&WIDTH=768&HEIGHT=485&BBOX=81.123046875%2C-20.2587890625%2C148.623046875%2C22.3681640625'
+        response = requests.get(url, stream=True)
+        with open(path, 'wb') as out_file:
+            shutil.copyfileobj(response.raw, out_file)
+        return path
+
+
 
 def get_smart_excel(definition, data_model, output='template.xlsx'):
     if isinstance(definition, dict):
@@ -294,7 +316,6 @@ class TestParseSheetDefinition(unittest.TestCase):
         excel = get_smart_excel(self.sheet_def, DataModel)
         self.assertEqual(len(excel.sheets['default']['components']), 1)
         self.assertTrue('image' in excel.sheets['default']['components'][0])
-
 
     def test_component_position(self):
         self.sheet_def['key'] = 'default'
@@ -563,6 +584,19 @@ class TestDump(unittest.TestCase):
                         'position': {
                             'x': 0,
                             'y': 2
+                        },
+                        'size': {
+                            'width': 4,
+                            'height': 2
+                        }
+                    },
+                    {
+                        'type': 'image',
+                        'name': 'Flood Map',
+                        'key': 'flood_map',
+                        'position': {
+                            'x': 0,
+                            'y': 3
                         },
                         'size': {
                             'width': 4,
