@@ -54,6 +54,14 @@ cd smartexcel-fbf
 pip3 install -r requirements.txt
 ```
 
+Temporary workaround for https://github.com/kartoza/smartexcel-fbf/issues/10
+```
+cd smartexcel-fbf
+mkdir fbf/maps
+chmod 777 fbf/maps
+```
+
+
 ### python/pl code
 
 The function's name is `fbf_generate_excel_report_for_flood`. It is already present in the database.
