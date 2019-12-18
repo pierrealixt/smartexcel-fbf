@@ -93,6 +93,13 @@ class DataModel():
     def get_text_for_sheet_title(self):
         return 'Hello World!'
 
+    def get_image_partner_logos(self):
+        # return '/fbf/images/partner_logos.png'
+        import os
+        return os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            'fbf/images',
+            'partner_logos.png')
 
 def get_smart_excel(definition, data_model, output='template.xlsx'):
     if isinstance(definition, dict):
@@ -265,6 +272,29 @@ class TestParseSheetDefinition(unittest.TestCase):
         ]
         excel = get_smart_excel(self.sheet_def, DataModel)
         self.assertEqual(len(excel.sheets['default']['components']), 1)
+
+    def test_image_component(self):
+        self.sheet_def['key'] = 'default'
+        image_comp = {
+            'type': 'image',
+            'name': 'Partner logos',
+            'key': 'partner_logos',
+            'position': {
+                'x': 0,
+                'y': 0
+            },
+            'size': {
+                'width': 4,
+                'height': 2
+            }
+        }
+        self.sheet_def['components'] = [
+            image_comp
+        ]
+        excel = get_smart_excel(self.sheet_def, DataModel)
+        self.assertEqual(len(excel.sheets['default']['components']), 1)
+        self.assertTrue('image' in excel.sheets['default']['components'][0])
+
 
     def test_component_position(self):
         self.sheet_def['key'] = 'default'
@@ -503,7 +533,8 @@ class TestDump(unittest.TestCase):
                             'x': 0,
                             'y': 0
                         },
-                        'text': 'sheet_title',
+                        # if `text`, it skip everything without error...
+                        'text_func': 'sheet_title',
                         'size': {
                             'width': 5,
                             'height': 2
@@ -524,6 +555,19 @@ class TestDump(unittest.TestCase):
                                 'key': 'first_column'
                             }
                         ]
+                    },
+                    {
+                        'type': 'image',
+                        'name': 'Partner logos',
+                        'key': 'partner_logos',
+                        'position': {
+                            'x': 0,
+                            'y': 2
+                        },
+                        'size': {
+                            'width': 4,
+                            'height': 2
+                        }
                     }
                 ]
             }
