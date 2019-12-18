@@ -163,6 +163,17 @@ class FbfFloodData():
 
         return self.execute_query(query)
 
+    def get_flood_extent(self, flood_event_id):
+        query = """
+            SELECT *
+            FROM vw_flood_event_extent fee
+            WHERE fee.id = {flood_event_id}
+        """.format(
+            flood_event_id=flood_event_id
+        )
+        return self.execute_query(query)
+
+
     def get_payload_subdistricts(self, instance, foreign_key):
         district_code = int(getattr(instance, foreign_key))
         return self.get_subdistricts(self.flood_event_id, district_code)
@@ -277,3 +288,15 @@ class FbfFloodData():
 
     def get_text_for_sub_district_sheet_title(self, instance):
         return f'Sub-district: {instance.sub_district_name}'
+
+    def get_image_flood_summary_map(self):
+        extent = self.get_flood_extent(self.flood_event_id)[0]
+
+        bbox = ','.join([
+            str(extent.x_min),
+            str(extent.y_min),
+            str(extent.x_max),
+            str(extent.y_max)
+        ])
+
+        url = f'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=kartoza:dbf_map&exceptions=application/vnd.ogc.se_inimage&SRS=EPSG:4326&STYLES=&WIDTH=768&HEIGHT=485&BBOX={bbox}'

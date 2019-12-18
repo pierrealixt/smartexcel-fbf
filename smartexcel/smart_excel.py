@@ -245,8 +245,7 @@ class SmartExcel():
                                 start_row = next_available['row']
 
                                 cell_pos = f'{start_col}{start_row}'
-                                print(cell_pos)
-                                import pdb; pdb.set_trace()
+
                                 fd_current_sheet.insert_image(cell_pos, component['image'])
 
         self.workbook.close()

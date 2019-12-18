@@ -94,12 +94,25 @@ FBF_DEFINITION = [
                 ]
             },
             {
+                'type': 'image',
+                'name': 'Flood summary Map',
+                'key': 'flood_summary_map',
+                'position': {
+                    'x': 0,
+                    'y': 2
+                },
+                'size': {
+                    'width': 4,
+                    'height': 2
+                }
+            },
+            {
                 'name': 'Flood Summary View',
                 'type': 'table',
                 'payload': 'districts',
                 'position': {
                     'x': 0,
-                    'y': 2
+                    'y': 3
                 },
                 'format': {
                     'header': 'table_header'
