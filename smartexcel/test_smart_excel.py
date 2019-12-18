@@ -93,34 +93,23 @@ class DataModel():
     def get_text_for_sheet_title(self):
         return 'Hello World!'
 
-    def get_image_partner_logos(self):
-        import os
+    def get_image_partner_logos(self, size):
         return os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             'fbf/images',
             'partner_logos.png')
 
-    def get_image_flood_map(self):
-        # 1. we need the area's extent
-        # select * from flood_event_extent_v where id = 15;
-        # 2. http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=kartoza%3Adbf_map&exceptions=application%2Fvnd.ogc.se_inimage&SRS=EPSG%3A4326&STYLES=&WIDTH=768&HEIGHT=485&BBOX=81.123046875%2C-20.2587890625%2C148.623046875%2C22.3681640625
-
-        import shutil
-
-        import requests
-        import os
-        path = os.path.join(
+    def get_image_partner_logos_small(self, size):
+        return os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
             'fbf/images',
-            'flood_map.png')
+            'partner_logos_small.png')
 
-
-        url = 'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image%2Fpng&TRANSPARENT=true&LAYERS=kartoza%3Adbf_map&exceptions=application%2Fvnd.ogc.se_inimage&SRS=EPSG%3A4326&STYLES=&WIDTH=768&HEIGHT=485&BBOX=81.123046875%2C-20.2587890625%2C148.623046875%2C22.3681640625'
-        response = requests.get(url, stream=True)
-        with open(path, 'wb') as out_file:
-            shutil.copyfileobj(response.raw, out_file)
-        return path
-
+    def get_image_partner_logos_bigger(self, size):
+        return os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            'fbf/images',
+            'partner_logos_bigger.png')
 
 
 def get_smart_excel(definition, data_model, output='template.xlsx'):
@@ -278,15 +267,11 @@ class TestParseSheetDefinition(unittest.TestCase):
         text_comp = {
             'type': 'text',
             'name': 'Sheet title',
-            'position': {
-                'x': 0,
-                'y': 0
-            },
             'size': {
                 'width': 7,
                 'height': 1
             },
-            'text': 'sheet_title'
+            'text_func': 'sheet_title'
 
         }
         self.sheet_def['components'] = [
@@ -301,10 +286,6 @@ class TestParseSheetDefinition(unittest.TestCase):
             'type': 'image',
             'name': 'Partner logos',
             'key': 'partner_logos',
-            'position': {
-                'x': 0,
-                'y': 0
-            },
             'size': {
                 'width': 4,
                 'height': 2
@@ -316,48 +297,6 @@ class TestParseSheetDefinition(unittest.TestCase):
         excel = get_smart_excel(self.sheet_def, DataModel)
         self.assertEqual(len(excel.sheets['default']['components']), 1)
         self.assertTrue('image' in excel.sheets['default']['components'][0])
-
-    def test_component_position(self):
-        self.sheet_def['key'] = 'default'
-        components = [
-            {
-                'type': 'map',
-                'name': 'My Map',
-                'position': {
-                    'x': 0,
-                    'y': 0
-                },
-                'payload': 'my_custom_payload_for_map',
-                'rows': [
-                    {
-                        'name': 'Row 1'
-                    }
-                ]
-            },
-            {
-                'type': 'map',
-                'name': 'a second map',
-                'position': {
-                    'x': 0,
-                    'y': 0
-                },
-                'payload': 'my_custom_payload_for_map',
-                'rows': [
-                    {
-                        'name': 'Row 1'
-                    }
-                ]
-            }
-        ]
-
-        self.sheet_def['components'] = components
-        with self.assertRaises(ValueError) as raised:
-            excel = get_smart_excel(self.sheet_def, DataModel)
-
-        self.assertEqual(str(raised.exception), 'Cannot position `a second map` at 0;0. `My Map` is already present.')
-
-        self.sheet_def['components'][1]['position']['y'] = 1
-        excel = get_smart_excel(self.sheet_def, DataModel)
 
     def test_recursive(self):
         self.sheet_def['components'] = [
@@ -469,10 +408,6 @@ class TestParseFormatDefinition(unittest.TestCase):
                 {
                     'type': 'table',
                     'name': 'My table',
-                    'position': {
-                        'x': 0,
-                        'y': 0
-                    },
                     'payload': 'my_custom_payload_for_table',
                     'format': {
                         'header': 'custom_header_format',
@@ -495,10 +430,6 @@ class TestParseFormatDefinition(unittest.TestCase):
                 {
                     'type': 'map',
                     'name': 'My Map',
-                    'position': {
-                        'x': 0,
-                        'y': 1
-                    },
                     'format': {
                         'map_key': 'custom_header_format',
                         'map_value': 'custom_map_value_format'
@@ -579,30 +510,17 @@ class TestDump(unittest.TestCase):
                     },
                     {
                         'type': 'image',
-                        'name': 'Partner logos',
-                        'key': 'partner_logos',
+                        'name': 'Partner logos SMALL',
+                        'key': 'partner_logos_small',
                         'position': {
                             'x': 0,
                             'y': 2
                         },
                         'size': {
-                            'width': 4,
-                            'height': 2
+                            'width': 300,
+                            'height': 41
                         }
                     },
-                    {
-                        'type': 'image',
-                        'name': 'Flood Map',
-                        'key': 'flood_map',
-                        'position': {
-                            'x': 0,
-                            'y': 3
-                        },
-                        'size': {
-                            'width': 4,
-                            'height': 2
-                        }
-                    }
                 ]
             }
         ]
@@ -676,6 +594,53 @@ class TestValidatePosition(unittest.TestCase):
         }
 
         self.assertTrue(validate_position(self.element))
+
+
+class TestDumpImages(unittest.TestCase):
+    def runTest(self):
+        definition = [
+            {
+                'type': 'sheet',
+                'name': 'Images',
+                'components': [
+                    {
+                        'type': 'image',
+                        'name': 'Partner logos SMALL',
+                        'key': 'partner_logos_small',
+                        'position': {
+                            'x': 0,
+                            'y': 0
+                        },
+                        'size': {
+                            'width': 300,
+                            'height': 41
+                        }
+                    },
+                    {
+                        'type': 'image',
+                        'name': 'Partner logos BIGGER',
+                        'key': 'partner_logos_bigger',
+                        'position': {
+                            'x': 0,
+                            'y': 1
+                        },
+                        'size': {
+                            'width': 1830,
+                            'height': 252
+                        }
+                    },
+                ]
+            }
+        ]
+
+        height_cell_px = 15
+
+        excel = get_smart_excel(
+            definition,
+            DataModel,
+            output='test_dump_images.xlsx')
+        excel.dump()
+
 
 
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 import os
 from collections import namedtuple
+import shutil
+import requests
 import psycopg2
 try:
     import plpy
@@ -14,6 +16,13 @@ def namedtuplefetchall(cursor):
 
 
 class FbfFloodData():
+    trigger_status = [
+        {'id': 0, 'status': 'No activation', 'color': '#72CA7A'},
+        {'id': 1, 'status': 'Pre-activation', 'color': '#D39858'},
+        {'id': 2, 'status': 'Activation', 'color': '#CA6060'},
+        {'id': 3, 'status': 'Stop', 'color': '#FF0000'}
+    ]
+
     def __init__(self, flood_event_id, pl_python_env=None):
         self.flood_event_id = flood_event_id
 
@@ -65,10 +74,7 @@ class FbfFloodData():
                 summary.total_vulnerability_score as vulnerability_total_score,
                 summary.building_count as total_buildings,
                 summary.flooded_building_count as flooded_buildings,
-                summary.residential_building_count as residential_building_count,
-                summary.residential_flooded_building_count as residential_flooded_building_count,
-                summary.clinic_dr_building_count as clinic_dr_building_count,
-                summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
+                summary.trigger_status as activation_state
 
             FROM
                 flood_event fe,
@@ -95,10 +101,7 @@ class FbfFloodData():
                 summary.total_vulnerability_score as vulnerability_total_score,
                 summary.building_count as total_buildings,
                 summary.flooded_building_count as flooded_buildings,
-                summary.residential_building_count as residential_building_count,
-                summary.residential_flooded_building_count as residential_flooded_building_count,
-                summary.clinic_dr_building_count as clinic_dr_building_count,
-                summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
+                summary.trigger_status as activation_state
 
             FROM
                 flood_event fe,
@@ -126,10 +129,7 @@ class FbfFloodData():
                 summary.total_vulnerability_score as vulnerability_total_score,
                 summary.building_count as total_buildings,
                 summary.flooded_building_count as flooded_buildings,
-                summary.residential_building_count as residential_building_count,
-                summary.residential_flooded_building_count as residential_flooded_building_count,
-                summary.clinic_dr_building_count as clinic_dr_building_count,
-                summary.clinic_dr_flooded_building_count as clinic_dr_flooded_building_count
+                summary.trigger_status as activation_state
 
             FROM
                 flood_event fe,
@@ -173,6 +173,21 @@ class FbfFloodData():
         )
         return self.execute_query(query)
 
+    def get_area_extent(self, params, area_code):
+        query = """
+            SELECT
+                st_xmin(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as x_min,
+                st_ymin(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as y_min,
+                st_xmax(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as x_max,
+                st_ymax(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as y_max
+            FROM {table}
+            WHERE {foreign_key} = '{area_code}'
+        """.format(
+            table=params['table'],
+            foreign_key=params['foreign_key'],
+            area_code=area_code
+        )
+        return self.execute_query(query)
 
     def get_payload_subdistricts(self, instance, foreign_key):
         district_code = int(getattr(instance, foreign_key))
@@ -224,7 +239,26 @@ class FbfFloodData():
         return instance.link
 
     def write_flood_trigger_status(self, instance, kwargs={}):
-        return instance.trigger_status
+        for status in self.trigger_status:
+            if status['id'] == instance.trigger_status:
+                return status['status']
+        return 'No action'
+
+
+    def get_format_for_trigger_status(self, instance):
+        cell_format = {
+            'bold': True,
+            'align': 'center',
+            'bg_color': ''
+        }
+
+        for status in self.trigger_status:
+            if status['id'] == instance.trigger_status:
+                cell_format['bg_color'] = status['color']
+                return cell_format
+
+        cell_format['bg_color'] = '#ddddd'
+        return cell_format
 
     def write_district_name(self, instance, kwargs={}):
         return instance.district_name
@@ -244,7 +278,7 @@ class FbfFloodData():
     def write_village_id(self, instance, kwargs={}):
         # village_id : 3201160018.0
         # cast to int to remove the decimal
-        # then to str because 3201160018 is bigger than 2,147,483,647
+        # then to str because 3,201,160,018 is bigger than 2,147,483,647
         return str(int(instance.village_code))
 
     def write_total_buildings(self, instance, kwargs={}):
@@ -283,20 +317,96 @@ class FbfFloodData():
     def get_text_for_main_sheet_title(self):
         return 'FbF Flood Summary Report'
 
+    def get_text_for_main_sheet_sub_title(self):
+        return 'Overview Map'
+
     def get_text_for_district_sheet_title(self, instance):
         return f'District: {instance.district_name}'
 
     def get_text_for_sub_district_sheet_title(self, instance):
         return f'Sub-district: {instance.sub_district_name}'
 
-    def get_image_flood_summary_map(self):
+    def get_image_partner_logos(self, size):
+        return path_to_image('partner_logos_medium.png')
+
+    def get_image_fba_logo(self, size):
+        return path_to_image('fba-inasafe.png')
+
+    def get_image_flood_summary_map(self, size):
         extent = self.get_flood_extent(self.flood_event_id)[0]
+        bbox = extent_to_string(extent)
+        url = build_wms_url(self.flood_event_id, bbox, size)
+        path_map = download_map(url, f'flood_summary_map_{self.flood_event_id}.png')
 
-        bbox = ','.join([
-            str(extent.x_min),
-            str(extent.y_min),
-            str(extent.x_max),
-            str(extent.y_max)
-        ])
+        return path_map
 
-        url = f'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS=kartoza:dbf_map&exceptions=application/vnd.ogc.se_inimage&SRS=EPSG:4326&STYLES=&WIDTH=768&HEIGHT=485&BBOX={bbox}'
+    def get_image_district_flood_summary_map(self, instance, size):
+        params = {
+            'size': size,
+            'table': 'district',
+            'foreign_key': 'dc_code',
+            'area_code': int(instance.district_code),
+            'image_name': f'district_{instance.district_code}_flood_summary_map_{self.flood_event_id}.png'
+        }
+
+        return self.get_map_path(params)
+
+    def get_image_sub_district_flood_summary_map(self, instance, size):
+        params = {
+            'size': size,
+            'table': 'sub_district',
+            'foreign_key': 'sub_dc_code',
+            'area_code': int(instance.sub_district_code),
+            'image_name': f'sub_district_{instance.sub_district_code}_flood_summary_map_{self.flood_event_id}.png'
+        }
+
+        return self.get_map_path(params)
+
+
+    def get_map_path(self, params):
+        extent = self.get_area_extent({
+            'table': params['table'],
+            'foreign_key': params['foreign_key']
+        }, params['area_code'])[0]
+
+        bbox = extent_to_string(extent)
+
+        url = build_wms_url(self.flood_event_id, bbox, params['size'])
+
+        path_map = download_map(url, params['image_name'])
+        return path_map
+
+def build_wms_url(flood_event_id, bbox, size):
+    width = size['width'] # 768
+    height = size['height'] # 485
+    layer = 'kartoza:flood_map'
+    cql_filter = f'flood_event_id={flood_event_id}'
+
+    return f'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS={layer}&cql_filter={cql_filter}&exceptions=application/vnd.ogc.se_inimage&SRS=EPSG:4326&STYLES=&WIDTH={width}&HEIGHT={height}&BBOX={bbox}'
+
+def extent_to_string(extent):
+    return ','.join([
+        str(extent.x_min),
+        str(extent.y_min),
+        str(extent.x_max),
+        str(extent.y_max)
+    ])
+
+def download_map(url, image):
+    path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'maps',
+        image)
+
+    response = requests.get(url, stream=True)
+
+    with open(path, 'wb') as out_file:
+        shutil.copyfileobj(response.raw, out_file)
+
+    return path
+
+def path_to_image(image):
+    return os.path.join(
+        os.path.dirname(os.path.realpath(__file__)),
+        'images',
+        image)
