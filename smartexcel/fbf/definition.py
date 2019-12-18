@@ -49,7 +49,7 @@ FBF_DEFINITION = [
                     'y': 0
                 },
                 'size': {
-                    'width': 5,
+                    'width': 4,
                     'height': 2
                 },
                 'text_func': 'main_sheet_title',
@@ -111,12 +111,6 @@ FBF_DEFINITION = [
                         'width': 20
                     },
                     {
-                        'name': 'District ID',
-                        'key': 'district_code',
-                        'width': 20,
-                        'format': 'number'
-                    },
-                    {
                         'name': 'Total Buildings',
                         'key': 'total_buildings',
                         'width': 20,
@@ -151,7 +145,7 @@ FBF_DEFINITION = [
                                 'y': 0
                             },
                             'size': {
-                                'width': 5,
+                                'width': 4,
                                 'height': 2
                             },
                             'text_func': 'district_sheet_title',
@@ -169,12 +163,6 @@ FBF_DEFINITION = [
                                     'name': 'Sub-district Name',
                                     'key': 'sub_district_name',
                                     'width': 22,
-                                },
-                                {
-                                    'name': 'Sub-district ID',
-                                    'key': 'sub_district_id',
-                                    'width': 20,
-                                    'format': 'number'
                                 },
                                 {
                                     'name': 'Total Buildings',
@@ -211,7 +199,7 @@ FBF_DEFINITION = [
                                             'y': 0
                                         },
                                         'size': {
-                                            'width': 5,
+                                            'width': 4,
                                             'height': 2
                                         },
                                         'text_func': 'sub_district_sheet_title',
@@ -228,11 +216,6 @@ FBF_DEFINITION = [
                                             {
                                                 'name': 'Village Name',
                                                 'key': 'village_name',
-                                                'width': 20,
-                                            },
-                                            {
-                                                'name': 'Village ID',
-                                                'key': 'village_id',
                                                 'width': 20,
                                             },
                                             {
