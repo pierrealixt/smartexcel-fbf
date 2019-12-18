@@ -377,8 +377,8 @@ class FbfFloodData():
         return path_map
 
 def build_wms_url(flood_event_id, bbox, size):
-    width = size['width'] # 768
-    height = size['height'] # 485
+    width = size['width']
+    height = size['height']
     layer = 'kartoza:flood_map'
     cql_filter = f'flood_event_id={flood_event_id}'
 
@@ -393,9 +393,13 @@ def extent_to_string(extent):
     ])
 
 def download_map(url, image):
+    maps_dir = '/tmp/fba-maps'
+
+    if not os.path.exists(maps_dir):
+        os.mkdir(maps_dir)
+
     path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        'maps',
+        maps_dir,
         image)
 
     response = requests.get(url, stream=True)
