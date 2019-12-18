@@ -240,7 +240,14 @@ class SmartExcel():
 
                                 # next_available['col'] += len_value + 2
                                 next_available['row'] += component['size']['height'] + self.margin_component
+                            elif 'image' in component:
+                                start_col = next_letter(next_available['col'])
+                                start_row = next_available['row']
 
+                                cell_pos = f'{start_col}{start_row}'
+                                print(cell_pos)
+                                import pdb; pdb.set_trace()
+                                fd_current_sheet.insert_image(cell_pos, component['image'])
 
         self.workbook.close()
 
@@ -325,13 +332,14 @@ class SmartExcel():
                         f'Cannot position `{component["name"]}` at {component["position"]["x"]};{component["position"]["y"]}. `{sheet_component["name"]}` is already present.'
                     )
 
-
             if component['type'] == 'table':
                 self.parse_table(**kwargs)
             elif component['type'] == 'map':
                 self.parse_map(**kwargs)
             elif component['type'] == 'text':
                 self.parse_text(**kwargs)
+            elif component['type'] == 'image':
+                self.parse_image(**kwargs)
             else:
                 raise ValueError(f"Type `{component['type']}` not supported.")
             if 'recursive' in component:
@@ -590,6 +598,32 @@ class SmartExcel():
             'position': kwargs['position'],
             'format': text_format
         })
+
+    def parse_image(self, **kwargs):
+        """ Parse an Image component.
+        """
+
+        required_attrs = [
+            'size',
+            'key'
+        ]
+
+        validate_attrs(required_attrs, kwargs, 'image component')
+        validate_size(kwargs)
+
+        sheet_key = kwargs['sheet_key']
+
+        image = getattr(
+            self.data,
+            f"get_image_{kwargs['key']}"
+        )()
+
+        self.sheets[sheet_key]['components'].append({
+            'image': image,
+            'size': kwargs['size'],
+            'position': kwargs['position'],
+        })
+
 
     def parse_columns(self, columns, repeat):
         """Parse columns of a Table component.
