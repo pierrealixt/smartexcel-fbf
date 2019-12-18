@@ -5,7 +5,12 @@ FBF_DEFINITION = [
         'format': {
             'bold': True,
             'font_size': 14,
-            'align': 'center'
+            'align': 'center',
+            'valign': 'vcenter',
+            'font_color': 'white',
+            'border': 1,
+            'bg_color': '#2F87A6',
+            'border_color': 'black'
         }
     },
     {
@@ -13,7 +18,14 @@ FBF_DEFINITION = [
         'key': 'map_keys',
         'format': {
             'bold': True,
-            'font_size': 14,
+            'font_size': 12
+        }
+    },
+    {
+        'type': 'format',
+        'key': 'map_values',
+        'format': {
+            'font_size': 12
         }
     },
     {
@@ -23,9 +35,25 @@ FBF_DEFINITION = [
             'align': 'center',
             'valign': 'vcenter',
             'bold': True,
-            'font_size': 14,
+            'font_size': 18,
+            'font_color': 'white',
             'border': 1,
-            'border_color': "#527d01"
+            'bg_color': '#2F87A6',
+            'border_color': 'black'
+        }
+    },
+    {
+        'type': 'format',
+        'key': 'sheet_sub_title',
+        'format': {
+            'align': 'center',
+            'valign': 'vcenter',
+            'bold': True,
+            'font_size': 16,
+            'font_color': 'white',
+            'border': 1,
+            'bg_color': '#2F87A6',
+            'border_color': 'black'
         }
     },
     {
@@ -36,7 +64,18 @@ FBF_DEFINITION = [
         'num_format': '0'
     },
     {
+        'type': 'format',
+        'key': 'bold',
+        'format': {
+            'bold': True
+        }
+    },
+    {
         'type': 'sheet',
+        'settings': {
+            'set_paper': 8,
+            'center_horizontally': None
+        },
         'name': {
             'func': 'flood_summary'
         },
@@ -44,10 +83,6 @@ FBF_DEFINITION = [
             {
                 'type': 'text',
                 'name': 'Sheet Title',
-                'position': {
-                    'x': 0,
-                    'y': 0
-                },
                 'size': {
                     'width': 4,
                     'height': 2
@@ -56,15 +91,41 @@ FBF_DEFINITION = [
                 'format': 'sheet_title'
             },
             {
+                'type': 'image',
+                'name': 'FbA logo',
+                'key': 'fba_logo',
+                'position': {
+                    'x': 0,
+                    'y': 0,
+                    'float': True
+                },
+                'size': {
+                    'width': 140,
+                    'height': 40
+                },
+            },
+            {
+                'type': 'image',
+                'name': 'Partner logos',
+                'key': 'partner_logos',
+                'size': {
+                    'width': 700,
+                    'height': 110
+                },
+            },
+            {
                 'name': 'Flood metadata',
                 'type': 'map',
                 'position': {
-                    'x': 0,
-                    'y': 1
+                    'margin': {
+                        'left': 1
+                    },
+                    'middle': 1
                 },
                 'payload': 'flood',
                 'format': {
-                    'map_key': 'map_keys'
+                    'map_key': 'map_keys',
+                    'map_value': 'map_values'
                 },
                 'rows': [
                     {
@@ -90,30 +151,33 @@ FBF_DEFINITION = [
                     {
                         'name': 'Trigger Status',
                         'key': 'flood_trigger_status',
+                        'format_func': 'trigger_status'
                     }
                 ]
+            },
+            {
+                'type': 'text',
+                'name': 'Overview Map',
+                'size': {
+                    'width': 4,
+                    'height': 1
+                },
+                'text_func': 'main_sheet_sub_title',
+                'format': 'sheet_sub_title'
             },
             {
                 'type': 'image',
                 'name': 'Flood summary Map',
                 'key': 'flood_summary_map',
-                'position': {
-                    'x': 0,
-                    'y': 2
-                },
                 'size': {
-                    'width': 4,
-                    'height': 2
+                    'width': 700,
+                    'height': 400
                 }
             },
             {
                 'name': 'Flood Summary View',
                 'type': 'table',
                 'payload': 'districts',
-                'position': {
-                    'x': 0,
-                    'y': 3
-                },
                 'format': {
                     'header': 'table_header'
                 },
@@ -121,7 +185,8 @@ FBF_DEFINITION = [
                     {
                         'name': 'District Name',
                         'key': 'district_name',
-                        'width': 20
+                        'width': 20,
+                        'format': 'bold'
                     },
                     {
                         'name': 'Total Buildings',
@@ -153,10 +218,6 @@ FBF_DEFINITION = [
                         {
                             'type': 'text',
                             'name': 'District Sheet Title',
-                            'position': {
-                                'x': 0,
-                                'y': 0
-                            },
                             'size': {
                                 'width': 4,
                                 'height': 2
@@ -165,17 +226,23 @@ FBF_DEFINITION = [
                             'format': 'sheet_title'
                         },
                         {
+                            'type': 'image',
+                            'name': 'District Flood summary Map',
+                            'key': 'district_flood_summary_map',
+                            'size': {
+                                'width': 600,
+                                'height': 400
+                            }
+                        },
+                        {
                             'name': 'Sub-districts',
                             'type': 'table',
-                            'position': {
-                                'x': 0,
-                                'y': 1
-                            },
                             'columns': [
                                 {
                                     'name': 'Sub-district Name',
                                     'key': 'sub_district_name',
                                     'width': 22,
+                                    'format': 'bold'
                                 },
                                 {
                                     'name': 'Total Buildings',
@@ -207,10 +274,6 @@ FBF_DEFINITION = [
                                     {
                                         'type': 'text',
                                         'name': 'Sub-district Sheet Title',
-                                        'position': {
-                                            'x': 0,
-                                            'y': 0
-                                        },
                                         'size': {
                                             'width': 4,
                                             'height': 2
@@ -219,17 +282,23 @@ FBF_DEFINITION = [
                                         'format': 'sheet_title'
                                     },
                                     {
+                                        'type': 'image',
+                                        'name': 'Sub-district Flood summary Map',
+                                        'key': 'sub_district_flood_summary_map',
+                                        'size': {
+                                            'width': 600,
+                                            'height': 400
+                                        }
+                                    },
+                                    {
                                         'name': 'Villages',
                                         'type': 'table',
-                                        'position': {
-                                            'x': 0,
-                                            'y': 1
-                                        },
                                         'columns': [
                                             {
                                                 'name': 'Village Name',
                                                 'key': 'village_name',
                                                 'width': 20,
+                                                'format': 'bold'
                                             },
                                             {
                                                 'name': 'Total Buildings',
@@ -249,7 +318,6 @@ FBF_DEFINITION = [
                                                 'width': 30,
                                                 'format': 'number'
                                             },
-
                                         ]
                                     }
                                 ]
