@@ -140,7 +140,10 @@ class SmartExcel():
         # First, we create the user sheets
         for sheet_key, sheet_data in self.sheets.items():
             if not sheet_data['reserved']:
-                sheet_data['fd'] = self.workbook.add_worksheet(sheet_data['name'])
+                try:
+                    sheet_data['fd'] = self.workbook.add_worksheet(sheet_data['name'])
+                except xlsxwriter.exceptions.DuplicateWorksheetName:
+                    sheet_data['fd'] = self.workbook.add_worksheet(f"{sheet_data['name']}-1")
 
         # Then, we create the reserved sheets
         for sheet_key, sheet_data in self.sheets.items():
@@ -155,6 +158,7 @@ class SmartExcel():
                 # self.build_data()
 
         for sheet_key, sheet_data in self.sheets.items():
+
             if sheet_data['reserved']:
                 continue
 
@@ -543,7 +547,7 @@ class SmartExcel():
                 cell_format['num_format'])
 
     def parse_map(self, **kwargs):
-        """Parse a Map component (as the data structuce).
+        """Parse a Map component (as the data structure).
 
         :param kwargs: the map definition
         :type kwargs: a dict
@@ -555,8 +559,10 @@ class SmartExcel():
         - 'payload': a string (required)
         - 'position': a dict
             => {
-                'x': 0,
-                'y': 0
+                'margin': {
+                    'left': an integer (number of cell)
+                },
+                'middle': an integer (number of cell between the column `keys` and the column `values`)
             }
         - 'format': a dict
             => {
@@ -677,6 +683,10 @@ class SmartExcel():
         - 'type': 'table' (required)
         - 'name': a string (required)
         - 'size': a dict (required)
+            => {
+                'width': an integer (number of cell)
+                'height': an integer (number of cell)
+            }
         - 'text_func': a string (required)
         - 'format': a string
         """
@@ -723,11 +733,15 @@ class SmartExcel():
         - 'type': 'table' (required)
         - 'name': a string (required)
         - 'size': a dict (required)
+            => {
+                'width': an integer (in pixel)
+                'height': an integer (in pixel)
+            }
         - 'image_func': a string (required)
         - 'position': a dict
             => {
-                'x': int,
-                'y': int,
+                'x': an integer (col),
+                'y': an integer (row),
                 'float': boolean
             }
         - 'parameters' : a dict
@@ -791,7 +805,7 @@ class SmartExcel():
                     'func': a string
                 }
         - 'data_func': a string (required)
-        - 'width': a integer
+        - 'width': a integer (width of the cell, in excel unit)
         - 'format': a string
         """
 
