@@ -337,6 +337,15 @@ FBF_DEFINITION = [
                                                     'format': 'sheet_title'
                                                 },
                                                 {
+                                                    'type': 'image',
+                                                    'name': 'Village Flood summary Map',
+                                                    'image_func': 'village_flood_summary_map',
+                                                    'size': {
+                                                        'width': 700,
+                                                        'height': 400
+                                                    }
+                                                },
+                                                {
                                                     'type': 'table',
                                                     'name': 'Village detail summary',
                                                     'columns': [
@@ -365,15 +374,6 @@ FBF_DEFINITION = [
                                                             'width': 30,
                                                         },
                                                     ]
-                                                },
-                                                {
-                                                    'type': 'image',
-                                                    'name': 'Village Flood summary Map',
-                                                    'image_func': 'village_flood_summary_map',
-                                                    'size': {
-                                                        'width': 700,
-                                                        'height': 400
-                                                    }
                                                 },
                                             ]
                                         }
