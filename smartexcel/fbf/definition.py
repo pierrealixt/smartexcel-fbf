@@ -100,7 +100,7 @@ FBF_DEFINITION = [
                     'float': True
                 },
                 'size': {
-                    'width': 140,
+                    'width': 140,  # in pixel
                     'height': 40
                 },
             },
@@ -230,7 +230,7 @@ FBF_DEFINITION = [
                             'name': 'District Flood summary Map',
                             'image_func': 'district_flood_summary_map',
                             'size': {
-                                'width': 600,
+                                'width': 700,
                                 'height': 400
                             }
                         },
@@ -286,7 +286,7 @@ FBF_DEFINITION = [
                                         'name': 'Sub-district Flood summary Map',
                                         'image_func': 'sub_district_flood_summary_map',
                                         'size': {
-                                            'width': 600,
+                                            'width': 700,
                                             'height': 400
                                         }
                                     },
@@ -318,7 +318,65 @@ FBF_DEFINITION = [
                                                 'width': 30,
                                                 'format': 'number'
                                             },
-                                        ]
+                                        ],
+                                        'recursive': {
+                                            'name': {
+                                                'func': 'village_detail'
+                                            },
+                                            'foreign_key': 'village_code',
+                                            'payload_func': 'village_detail',
+                                            'components': [
+                                                {
+                                                    'type': 'text',
+                                                    'name': 'Village Sheet Title',
+                                                    'size': {
+                                                        'width': 4,
+                                                        'height': 2
+                                                    },
+                                                    'text_func': 'village_sheet_title',
+                                                    'format': 'sheet_title'
+                                                },
+                                                {
+                                                    'type': 'table',
+                                                    'name': 'Village detail summary',
+                                                    'columns': [
+                                                        {
+                                                            'name': 'Village Name',
+                                                            'data_func': 'village_name',
+                                                            'width': 20,
+                                                            'format': 'bold'
+                                                        },
+                                                        {
+                                                            'name': 'Total Buildings',
+                                                            'data_func': 'total_buildings',
+                                                            'format': 'number',
+                                                            'width': 20,
+                                                        },
+                                                        {
+                                                            'name': 'Flooded Buildings',
+                                                            'data_func': 'flooded_buildings',
+                                                            'format': 'number',
+                                                            'width': 25,
+                                                        },
+                                                        {
+                                                            'name': 'Not Flooded Buildings',
+                                                            'data_func': 'not_flooded_buildings',
+                                                            'format': 'number',
+                                                            'width': 30,
+                                                        },
+                                                    ]
+                                                },
+                                                {
+                                                    'type': 'image',
+                                                    'name': 'Village Flood summary Map',
+                                                    'image_func': 'village_flood_summary_map',
+                                                    'size': {
+                                                        'width': 700,
+                                                        'height': 400
+                                                    }
+                                                },
+                                            ]
+                                        }
                                     }
                                 ]
                             }
