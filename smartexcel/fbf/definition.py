@@ -58,6 +58,15 @@ FBF_DEFINITION = [
     },
     {
         'type': 'format',
+        'key': 'main_sheet_footer',
+        'format': {
+            'align': 'center',
+            'font_color': 'white',
+            'bg_color': '#2F87A6',
+        }
+    },
+    {
+        'type': 'format',
         'key': 'number',
         'format': {
         },
@@ -160,7 +169,7 @@ FBF_DEFINITION = [
                 'name': 'Overview Map',
                 'size': {
                     'width': 4,
-                    'height': 1
+                    'height': 2
                 },
                 'text_func': 'main_sheet_sub_title',
                 'format': 'sheet_sub_title'
@@ -385,6 +394,22 @@ FBF_DEFINITION = [
                 }
             },
             {
+                'type': 'text',
+                'name': 'Made by Kartoza',
+                'text_func': 'kartoza',
+                'size': {
+                    'width': 4,
+                    'height': 1
+                },
+                'format': 'main_sheet_footer',
+                'position': {
+                    'margin': {
+                        'top': 3,
+                        'left': 0
+                    }
+                }
+            },
+            {
                 'type': 'image',
                 'name': 'Kartoza logo',
                 'image_func': 'kartoza_logo',
@@ -394,14 +419,15 @@ FBF_DEFINITION = [
                 },
                 'position': {
                     'margin': {
-                        'top': 3,
-                        'left': 3
+                        'top': 2,
+                        'left': 0
                     }
                 },
                 'parameters': {
                     'x_scale': 0.5,
                     'y_scale': 0.6,
-                    'x_offset': 52
+                    'x_offset': 52,
+                    'url': 'https://kartoza.com'
                 }
             },
         ]

@@ -300,10 +300,10 @@ class SmartExcel():
         :param next_available_row:
         """
 
-        first_row = next_available_row
-        first_col = 0
+        first_row = next_available_row + component['position']['margin']['top']
+        first_col = 0 + component['position']['margin']['left']
 
-        last_row = first_row + component['size']['height']
+        last_row = first_row + (component['size']['height'] - 1)
         last_col = first_col + (component['size']['width'] - 1)
 
         range_format = self.get_format(component['format'])
@@ -328,26 +328,14 @@ class SmartExcel():
         :param next_available_row:
         """
         if 'position' in component and 'x' in component['position']:
-            n_row = component['position']['x']
-            n_col = component['position']['y']
+            row = component['position']['x']
+            col = component['position']['y']
         else:
-
-            # TODO: compute margins somewhere else
-            try:
-                margin_left = component['position']['margin']['left']
-            except (KeyError, TypeError):
-                margin_left = 0
-
-            try:
-                margin_top = component['position']['margin']['top']
-            except (KeyError, TypeError):
-                margin_top = 0
-
-            n_row = next_available_row + margin_top
-            n_col = 0 + margin_left
+            row = next_available_row + component['position']['margin']['top']
+            col = 0 + component['position']['margin']['left']
 
         fd_current_sheet.insert_image(
-            n_row, n_col,
+            row, col,
             component['image'],
             component['parameters'])
 
@@ -701,6 +689,16 @@ class SmartExcel():
             }
         - 'text_func': a string (required)
         - 'format': a string
+        - 'position': a dict
+            => {
+                'x': an integer (col),
+                'y': an integer (row),
+                'float': boolean,
+                'margin': {
+                    'top': an integer (number of cell)
+                    'left': an integer
+                }
+            }
         """
 
         required_attrs = [
@@ -732,11 +730,14 @@ class SmartExcel():
                 f"get_text_for_{kwargs['text_func']}"
             )()
 
+        position = self.parse_position(kwargs)
+
         self.sheets[sheet_key]['components'].append({
             'type': 'text',
             'text': text,
             'size': kwargs['size'],
-            'format': text_format
+            'format': text_format,
+            'position': position
         })
 
     def parse_image(self, **kwargs):
@@ -791,10 +792,7 @@ class SmartExcel():
         else:
             parameters = {}
 
-        if 'position' in kwargs:
-            position = kwargs['position']
-        else:
-            position = {}
+        position = self.parse_position(kwargs)
 
         self.sheets[sheet_key]['components'].append({
             'type': 'image',
@@ -858,6 +856,17 @@ class SmartExcel():
                 parsed_columns.append(tmp_col)
             return parsed_columns
 
+    def parse_position(self, component):
+        if 'position' in component:
+            position = component['position']
+        else:
+            position = {
+                'margin': {
+                    'left': 0,
+                    'top': 0
+                }
+            }
+        return position
 
     def set_list_source_func(self, sheet, cell_range, column):
         if 'validations' in column and 'list_source_func' in column['validations']:

@@ -335,6 +335,9 @@ class FbfFloodData():
     def get_text_for_village_sheet_title(self, instance):
         return f'Village: {instance.village_name}'
 
+    def get_text_for_kartoza(self):
+        return 'Made with love by Kartoza'
+
     def get_image_partner_logos(self, size):
         return path_to_image('partner_logos_medium.png')
 
@@ -342,7 +345,7 @@ class FbfFloodData():
         return path_to_image('fba-inasafe.png')
 
     def get_image_kartoza_logo(self, size):
-        return path_to_image('kartoza.png')
+        return path_to_image('kartoza2.png')
 
     def get_image_flood_summary_map(self, size):
         # substract x_max and x_min => width
