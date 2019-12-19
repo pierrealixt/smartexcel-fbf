@@ -197,6 +197,9 @@ class FbfFloodData():
         sub_district_code = int(getattr(instance, foreign_key))
         return self.get_villages(self.flood_event_id, sub_district_code)
 
+    def get_payload_village_detail(self, instance, foreign_key):
+        return [instance]
+
     def get_sheet_name_for_flood_summary(self, kwargs={}):
         return f"Flood Summary"
 
@@ -206,6 +209,10 @@ class FbfFloodData():
 
     def get_sheet_name_for_village_summary(self, instance, kwargs={}):
         name = f"Sub district {instance.sub_district_name} Summary"
+        return name[0:30]
+
+    def get_sheet_name_for_village_detail(self, instance, kwargs={}):
+        name = f"Village {instance.village_name} Summary"
         return name[0:30]
 
     def write_flood_title(self, instance, kwargs={}):
@@ -243,7 +250,6 @@ class FbfFloodData():
             if status['id'] == instance.trigger_status:
                 return status['status']
         return 'No action'
-
 
     def get_format_for_trigger_status(self, instance):
         cell_format = {
@@ -326,6 +332,9 @@ class FbfFloodData():
     def get_text_for_sub_district_sheet_title(self, instance):
         return f'Sub-district: {instance.sub_district_name}'
 
+    def get_text_for_village_sheet_title(self, instance):
+        return f'Village: {instance.village_name}'
+
     def get_image_partner_logos(self, size):
         return path_to_image('partner_logos_medium.png')
 
@@ -372,6 +381,16 @@ class FbfFloodData():
 
         return self.get_map_path(params)
 
+    def get_image_village_flood_summary_map(self, instance, size):
+        params = {
+            'size': size,
+            'table': 'village',
+            'foreign_key': 'village_code',
+            'area_code': int(instance.village_code),
+            'image_name': f'village_{instance.village_code}_flood_summary_map_{self.flood_event_id}.png'
+        }
+
+        return self.get_map_path(params)
 
     def get_map_path(self, params):
         extent = self.get_area_extent({
