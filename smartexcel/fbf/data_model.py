@@ -391,8 +391,9 @@ def build_wms_url(flood_event_id, bbox, size):
     height = size['height']
     layer = 'kartoza:flood_map'
     cql_filter = f'flood_event_id={flood_event_id}'
+    image_format = 'image/png8'
 
-    return f'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT=image/png&TRANSPARENT=true&LAYERS={layer}&cql_filter={cql_filter}&exceptions=application/vnd.ogc.se_inimage&SRS=EPSG:4326&STYLES=&WIDTH={width}&HEIGHT={height}&BBOX={bbox}'
+    return f'http://78.47.62.69/geoserver/kartoza/wms?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&FORMAT={image_format}&TRANSPARENT=true&LAYERS={layer}&cql_filter={cql_filter}&exceptions=application/vnd.ogc.se_inimage&SRS=EPSG:4326&STYLES=&WIDTH={width}&HEIGHT={height}&BBOX={bbox}'
 
 def extent_to_string(extent):
     return ','.join([
