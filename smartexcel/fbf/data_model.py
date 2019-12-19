@@ -176,10 +176,10 @@ class FbfFloodData():
     def get_area_extent(self, params, area_code):
         query = """
             SELECT
-                st_xmin(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as x_min,
-                st_ymin(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as y_min,
-                st_xmax(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as x_max,
-                st_ymax(st_extent((st_buffer(geom,0.25)::geography)::geometry)) as y_max
+                st_xmin(st_extent((st_buffer(geom, 0.25)::geography)::geometry)) as x_min,
+                st_ymin(st_extent((st_buffer(geom, 0.25)::geography)::geometry)) as y_min,
+                st_xmax(st_extent((st_buffer(geom, 0.25)::geography)::geometry)) as x_max,
+                st_ymax(st_extent((st_buffer(geom, 0.25)::geography)::geometry)) as y_max
             FROM {table}
             WHERE {foreign_key} = '{area_code}'
         """.format(
@@ -333,8 +333,18 @@ class FbfFloodData():
         return path_to_image('fba-inasafe.png')
 
     def get_image_flood_summary_map(self, size):
+        # substract x_max and x_min => width
+        # substract y_max and y_min => height
+
+        # with width and height, get the ratio
+
+        # compare ratio (e.g: 7/3) with `size` ratio (700x400)
+        # if bigger, scale the height
+        # y_max * image_ratio / extent_radio
+        # if smaller, scale the width
         extent = self.get_flood_extent(self.flood_event_id)[0]
         bbox = extent_to_string(extent)
+
         url = build_wms_url(self.flood_event_id, bbox, size)
         path_map = download_map(url, f'flood_summary_map_{self.flood_event_id}.png')
 
