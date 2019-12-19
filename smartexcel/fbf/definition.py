@@ -93,7 +93,7 @@ FBF_DEFINITION = [
             {
                 'type': 'image',
                 'name': 'FbA logo',
-                'key': 'fba_logo',
+                'image_func': 'fba_logo',
                 'position': {
                     'x': 0,
                     'y': 0,
@@ -107,7 +107,7 @@ FBF_DEFINITION = [
             {
                 'type': 'image',
                 'name': 'Partner logos',
-                'key': 'partner_logos',
+                'image_func': 'partner_logos',
                 'size': {
                     'width': 700,
                     'height': 110
@@ -130,27 +130,27 @@ FBF_DEFINITION = [
                 'rows': [
                     {
                         'name': 'Acquisition Date',
-                        'key': 'flood_acquisition_date',
+                        'data_func': 'flood_acquisition_date',
                     },
                     {
                         'name': 'Forecast Date',
-                        'key': 'flood_forecast_date',
+                        'data_func': 'flood_forecast_date',
                     },
                     {
                         'name': 'Source',
-                        'key': 'flood_source',
+                        'data_func': 'flood_source',
                     },
                     {
                         'name': 'Notes',
-                        'key': 'flood_notes',
+                        'data_func': 'flood_notes',
                     },
                     {
                         'name': 'Link',
-                        'key': 'flood_link',
+                        'data_func': 'flood_link',
                     },
                     {
                         'name': 'Trigger Status',
-                        'key': 'flood_trigger_status',
+                        'data_func': 'flood_trigger_status',
                         'format_func': 'trigger_status'
                     }
                 ]
@@ -168,7 +168,7 @@ FBF_DEFINITION = [
             {
                 'type': 'image',
                 'name': 'Flood summary Map',
-                'key': 'flood_summary_map',
+                'image_func': 'flood_summary_map',
                 'size': {
                     'width': 700,
                     'height': 400
@@ -184,25 +184,25 @@ FBF_DEFINITION = [
                 'columns': [
                     {
                         'name': 'District Name',
-                        'key': 'district_name',
+                        'data_func': 'district_name',
                         'width': 20,
                         'format': 'bold'
                     },
                     {
                         'name': 'Total Buildings',
-                        'key': 'total_buildings',
+                        'data_func': 'total_buildings',
                         'width': 20,
                         'format': 'number'
                     },
                     {
                         'name': 'Flooded Buildings',
-                        'key': 'flooded_buildings',
+                        'data_func': 'flooded_buildings',
                         'width': 25,
                         'format': 'number'
                     },
                     {
                         'name': 'Not Flooded Buildings',
-                        'key': 'not_flooded_buildings',
+                        'data_func': 'not_flooded_buildings',
                         'width': 30,
                         'format': 'number'
                     },
@@ -228,7 +228,7 @@ FBF_DEFINITION = [
                         {
                             'type': 'image',
                             'name': 'District Flood summary Map',
-                            'key': 'district_flood_summary_map',
+                            'image_func': 'district_flood_summary_map',
                             'size': {
                                 'width': 600,
                                 'height': 400
@@ -240,25 +240,25 @@ FBF_DEFINITION = [
                             'columns': [
                                 {
                                     'name': 'Sub-district Name',
-                                    'key': 'sub_district_name',
+                                    'data_func': 'sub_district_name',
                                     'width': 22,
                                     'format': 'bold'
                                 },
                                 {
                                     'name': 'Total Buildings',
-                                    'key': 'total_buildings',
+                                    'data_func': 'total_buildings',
                                     'width': 20,
                                     'format': 'number'
                                 },
                                 {
                                     'name': 'Flooded Buildings',
-                                    'key': 'flooded_buildings',
+                                    'data_func': 'flooded_buildings',
                                     'width': 25,
                                     'format': 'number'
                                 },
                                 {
                                     'name': 'Not Flooded Buildings',
-                                    'key': 'not_flooded_buildings',
+                                    'data_func': 'not_flooded_buildings',
                                     'width': 30,
                                     'format': 'number'
                                 },
@@ -284,7 +284,7 @@ FBF_DEFINITION = [
                                     {
                                         'type': 'image',
                                         'name': 'Sub-district Flood summary Map',
-                                        'key': 'sub_district_flood_summary_map',
+                                        'image_func': 'sub_district_flood_summary_map',
                                         'size': {
                                             'width': 600,
                                             'height': 400
@@ -296,25 +296,25 @@ FBF_DEFINITION = [
                                         'columns': [
                                             {
                                                 'name': 'Village Name',
-                                                'key': 'village_name',
+                                                'data_func': 'village_name',
                                                 'width': 20,
                                                 'format': 'bold'
                                             },
                                             {
                                                 'name': 'Total Buildings',
-                                                'key': 'total_buildings',
+                                                'data_func': 'total_buildings',
                                                 'width': 20,
                                                 'format': 'number'
                                             },
                                             {
                                                 'name': 'Flooded Buildings',
-                                                'key': 'flooded_buildings',
+                                                'data_func': 'flooded_buildings',
                                                 'width': 25,
                                                 'format': 'number'
                                             },
                                             {
                                                 'name': 'Not Flooded Buildings',
-                                                'key': 'not_flooded_buildings',
+                                                'data_func': 'not_flooded_buildings',
                                                 'width': 30,
                                                 'format': 'number'
                                             },
