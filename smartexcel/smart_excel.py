@@ -331,8 +331,20 @@ class SmartExcel():
             n_row = component['position']['x']
             n_col = component['position']['y']
         else:
-            n_row = next_available_row
-            n_col = 0
+
+            # TODO: compute margins somewhere else
+            try:
+                margin_left = component['position']['margin']['left']
+            except (KeyError, TypeError):
+                margin_left = 0
+
+            try:
+                margin_top = component['position']['margin']['top']
+            except (KeyError, TypeError):
+                margin_top = 0
+
+            n_row = next_available_row + margin_top
+            n_col = 0 + margin_left
 
         fd_current_sheet.insert_image(
             n_row, n_col,
@@ -742,7 +754,11 @@ class SmartExcel():
             => {
                 'x': an integer (col),
                 'y': an integer (row),
-                'float': boolean
+                'float': boolean,
+                'margin': {
+                    'top': an integer (number of cell)
+                    'left': an integer
+                }
             }
         - 'parameters' : a dict
             => https://xlsxwriter.readthedocs.io/worksheet.html#worksheet-insert-image
