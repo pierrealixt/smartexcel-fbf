@@ -45,39 +45,27 @@ A file `test_fbf.xlsx` is created at the root of this project. Open it and make 
 ### SmartExcel code
 1. Do your change, edit the definition, tweak the data model. Make sure it works by running the test. Then commit and push.
 2. Go to rancher > Fbf stack > connect to the shell of the `db` container
-3. Run these commands:
+3. Run:
 ```
-cd /usr/local/lib/python3.7/dist-packages
-rm -rf smartexcel-fbf
-git clone https://github.com/kartoza/smartexcel-fbf.git
-cd smartexcel-fbf
-pip3 install -r requirements.txt
+pip3 install git+https://github.com/kartoza/smartexcel-fbf.git
 ```
-
-Temporary workaround for https://github.com/kartoza/smartexcel-fbf/issues/10
-```
-cd smartexcel-fbf
-mkdir fbf/maps
-chmod 777 fbf/maps
-```
-
 
 ### python/pl code
 
-The function's name is `fbf_generate_excel_report_for_flood`. It is already present in the database.
+The function's name is `kartoza_fba_generate_excel_report_for_flood`. It is already present in the database.
 If you need to change the code of the function, you must replace it.
 
 ```
-CREATE OR REPLACE FUNCTION fbf_generate_excel_report_for_flood (flood_event_id integer)
+CREATE OR REPLACE FUNCTION kartoza_fba_generate_excel_report_for_flood (flood_event_id integer)
   RETURNS varchar
  AS $$
    import io
-   import sys
-   sys.path.insert(0, '/usr/local/lib/python3.7/dist-packages')
-   sys.path.insert(0, '/usr/local/lib/python3.7/dist-packages/smartexcel-fbf/smartexcel')
-   from smart_excel import SmartExcel
-   from fbf.data_model import FbfFloodData
-   from fbf.definition import FBF_DEFINITION
+   plpy.execute("select * from satisfy_dependency('xlsxwriter')")
+   plpy.execute("select * from satisfy_dependency('openpyxl')")
+
+   from smartexcel.smart_excel import SmartExcel
+   from smartexcel.fbf.data_model import FbfFloodData
+   from smartexcel.fbf.definition import FBF_DEFINITION
 
    excel = SmartExcel(
        output=io.BytesIO(),
@@ -100,6 +88,6 @@ $$ LANGUAGE plpython3u;
 ## How to use it
 
 ```
-select * from fbf_generate_excel_report_for_flood(15);
+select * from kartoza_fba_generate_excel_report_for_flood(15);
 ```
 `15` is an ID present in the table `flood_event`.
