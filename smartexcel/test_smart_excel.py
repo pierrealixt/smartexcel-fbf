@@ -197,7 +197,7 @@ class TestParseSheetDefinition(unittest.TestCase):
         columns = [
             {
                 'name': 'Column 1',
-                'key': 'column_1'
+                'data_func': 'column_1'
             }
         ]
 
@@ -216,7 +216,7 @@ class TestParseSheetDefinition(unittest.TestCase):
                 'name': 'Column 1',
                 'letter': 'A',
                 'index': 0,
-                'key': 'column_1'
+                'data_func': 'column_1'
             })
 
         columns = [
@@ -224,7 +224,7 @@ class TestParseSheetDefinition(unittest.TestCase):
                 'name': {
                     'func': 'column_name_func'
                 },
-                'key': 'column_1'
+                'data_func': 'column_1'
             }
         ]
         parsed_columns = excel.parse_columns(columns, repeat=1)
@@ -234,7 +234,7 @@ class TestParseSheetDefinition(unittest.TestCase):
                 'name': 'Bonzai',
                 'letter': 'A',
                 'index': 0,
-                'key': 'column_1'
+                'data_func': 'column_1'
             })
 
     def test_map_component(self):
@@ -242,25 +242,32 @@ class TestParseSheetDefinition(unittest.TestCase):
         map_comp = {
             'type': 'map',
             'name': 'My Map',
-            'position': {
-                'x': 0,
-                'y': 0
-            },
             'payload': 'my_custom_payload_for_map',
         }
 
         rows = [
             {
-                'name': 'Row 1'
+                'name': 'Row 1',
+                'data_func': 'row_one'
+            },
+            {
+                'name': 'Row 2',
+                'data_func': 'row_one'
             }
         ]
         map_comp['rows'] = rows
         self.sheet_def['components'] = [
             map_comp
         ]
-        excel = get_smart_excel(self.sheet_def, DataModel)
+        excel = get_smart_excel(
+            self.sheet_def,
+            DataModel,
+            output='test_render_map_comp.xlsx')
+
         self.assertEqual(len(excel.sheets['default']['components']), 1)
-        self.assertEqual(len(excel.sheets['default']['components'][0]['rows']), 1)
+        self.assertEqual(len(excel.sheets['default']['components'][0]['rows']), 2)
+
+        excel.dump()
 
     def test_text_component(self):
         self.sheet_def['key'] = 'default'
@@ -285,7 +292,7 @@ class TestParseSheetDefinition(unittest.TestCase):
         image_comp = {
             'type': 'image',
             'name': 'Partner logos',
-            'key': 'partner_logos',
+            'image_func': 'partner_logos',
             'size': {
                 'width': 4,
                 'height': 2
@@ -311,11 +318,11 @@ class TestParseSheetDefinition(unittest.TestCase):
                 'columns': [
                     {
                         'name': 'Identification',
-                        'key': 'thing_id'
+                        'data_func': 'thing_id'
                     },
                     {
                         'name': 'Value',
-                        'key': 'thing_value'
+                        'data_func': 'thing_value'
                     }
                 ],
                 'recursive': {
@@ -335,7 +342,7 @@ class TestParseSheetDefinition(unittest.TestCase):
                             'columns': [
                                 {
                                     'name': 'Result',
-                                    'key': 'result'
+                                    'data_func': 'result'
                                 }
                             ]
                         }
@@ -416,13 +423,13 @@ class TestParseFormatDefinition(unittest.TestCase):
                     'columns': [
                         {
                             'name': 'Custom format lolilol',
-                            'key': 'first_column',
+                            'data_func': 'first_column',
                             'format': 'my_custom_format',
                             'width': 33
                         },
                         {
                             'name': 'Default format',
-                            'key': 'first_column',
+                            'data_func': 'first_column',
                             'width': 30
                         },
                     ]
@@ -438,10 +445,10 @@ class TestParseFormatDefinition(unittest.TestCase):
                     'rows': [
                         {
                             'name': 'Row 1',
-                            'key': 'row_one'
+                            'data_func': 'row_one'
                         },
                         {
-                            'key': 'row_one'
+                            'data_func': 'row_one'
                         }
                     ]
                 }
@@ -504,14 +511,14 @@ class TestDump(unittest.TestCase):
                         'columns': [
                             {
                                 'name': 'Column 1',
-                                'key': 'first_column'
+                                'data_func': 'first_column'
                             }
                         ]
                     },
                     {
                         'type': 'image',
                         'name': 'Partner logos SMALL',
-                        'key': 'partner_logos_small',
+                        'image_func': 'partner_logos_small',
                         'position': {
                             'x': 0,
                             'y': 2
@@ -524,7 +531,6 @@ class TestDump(unittest.TestCase):
                 ]
             }
         ]
-
 
         excel = get_smart_excel(
             definition,
@@ -606,7 +612,7 @@ class TestDumpImages(unittest.TestCase):
                     {
                         'type': 'image',
                         'name': 'Partner logos SMALL',
-                        'key': 'partner_logos_small',
+                        'image_func': 'partner_logos_small',
                         'position': {
                             'x': 0,
                             'y': 0
@@ -619,7 +625,7 @@ class TestDumpImages(unittest.TestCase):
                     {
                         'type': 'image',
                         'name': 'Partner logos BIGGER',
-                        'key': 'partner_logos_bigger',
+                        'image_func': 'partner_logos_bigger',
                         'position': {
                             'x': 0,
                             'y': 1

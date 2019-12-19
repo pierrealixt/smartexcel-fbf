@@ -133,7 +133,7 @@ class SmartExcel():
 
     def dump(self):
         """
-        Dump data into a xlsx file according to the definition.
+        Dump (render) data into a xlsx file according to the definition.
         """
         assert self.WRITEMODE
 
@@ -147,15 +147,17 @@ class SmartExcel():
             if sheet_data['reserved']:
                 sheet_data['fd'] = self.workbook.add_worksheet(sheet_data['name'])
                 sheet_data['fd'].protect()
-
-        # self.build_top_header()
-        self.build_meta()
-        self.build_data()
+                getattr(
+                    self,
+                    f"build{sheet_data['name']}"
+                )()
+                # self.build_meta()
+                # self.build_data()
 
         for sheet_key, sheet_data in self.sheets.items():
-
             if sheet_data['reserved']:
                 continue
+
             fd_current_sheet = sheet_data['fd']
 
             # apply settings to each sheet
@@ -171,134 +173,177 @@ class SmartExcel():
                         method
                     )(value)
 
-
-            next_available = {
-                'row': 0,
-                'col': 0
-            }
+            next_available_row = 0
 
             for component in sheet_data['components']:
-                if 'rows' in component:
-                    map_key_format = self.get_component_format(component, 'map_key')
-                    map_value_format = self.get_component_format(component, 'map_value')
-
-                    for index, row in enumerate(component['rows']):
-                        start_row = next_available['row'] + index
-                        try:
-                            margin_left = component['position']['margin']['left']
-                        except (KeyError, TypeError):
-                            margin_left = 0
-
-                        start_col = next_available['col'] + margin_left
-
-                        if 'name' in row:
-                            map_key = row['name']
-
-                            fd_current_sheet.write(
-                                start_row,
-                                start_col,
-                                map_key,
-                                map_key_format)
-
-                            map_value = self.get_value(
-                                self.data,
-                                f"write_{row['key']}",
-                                component['payload'][0],
-                                {})
-
-                            if 'format_func' in row:
-                                cell_format = getattr(
-                                    self.data,
-                                    f"get_format_for_{row['format_func']}"
-                                )(component['payload'][0])
-
-                                map_value_format = self.workbook.add_format(cell_format)
-
-                            try:
-                                middle = component['position']['middle']
-                            except (KeyError, TypeError):
-                                middle = 0
-
-                            start_col += middle
-
-                        fd_current_sheet.write(
-                            start_row,
-                            start_col,
-                            map_value,
-                            map_value_format)
-
-                    next_available['row'] += len(component['rows']) + self.margin_component
-
-                elif 'columns' in component:
-                    header_format = self.get_component_format(component, 'header')
-                    component_cell_format = self.get_component_format(component, 'cell')
-
-                    for column in component['columns']:
-                        self.write_header(
-                            fd_current_sheet,
-                            column,
-                            next_available,
-                            header_format)
-
-                        # validations
-                        self.set_validations(fd_current_sheet, column)
-
-                        values = self.get_values_for_column(column, component['payload'])
-                        self.set_column_width(fd_current_sheet, column, values)
-
-                        # format
-                        cell_format = self.get_column_format(column) or component_cell_format
-
-                        for index, value in enumerate(values):
-                            cell_pos = f'{column["letter"]}{index + next_available["row"] + 1 + self.header_row}'
-                            fd_current_sheet.write(cell_pos, value, cell_format)
-
-                    next_available['row'] += len(values) + 1 + self.margin_component
-
-                elif 'text' in component:
-                    first_row = next_available['row']
-                    first_col = next_available['col']
-
-                    last_row = first_row + component['size']['height']
-                    last_col = first_col + (component['size']['width'] - 1)
-
-                    range_format = self.get_format(component['format'])
-
-                    fd_current_sheet.merge_range(
-                        first_row,
-                        first_col,
-                        last_row,
-                        last_col,
-                        component['text'],
-                        range_format)
-
-                    next_available['row'] += component['size']['height'] + self.margin_component
-
-                elif 'image' in component:
-                    if 'position' in component and 'x' in component['position']:
-                        n_row = component['position']['x']
-                        n_col = component['position']['y']
-                    else:
-                        n_row = next_available['row']
-                        n_col = next_available['col']
-
-                    fd_current_sheet.insert_image(
-                        n_row, n_col,
-                        component['image'],
-                        component['parameters'])
-
-                    try:
-                        component['position']['float']
-                    except KeyError:
-
-                        height_cell_px = 20
-                        image_heigt_in_cells = math.ceil(component['size']['height'] / height_cell_px)
-                        next_available['row'] += image_heigt_in_cells + self.margin_component
-
-
-
+                next_available_row += getattr(
+                    self,
+                    f"render_{component['type']}_component"
+                )(fd_current_sheet, component, next_available_row)
 
         self.workbook.close()
+
+    def render_map_component(self, fd_current_sheet, component, next_available_row):
+        """Render a Map component into the current sheet at the next available row.
+
+        :param fd_current_sheet:
+
+        :param component:
+
+        :param next_available_row:
+        """
+        map_key_format = self.get_component_format(component, 'map_key')
+        map_value_format = self.get_component_format(component, 'map_value')
+
+        for index, row in enumerate(component['rows']):
+            start_row = next_available_row + index
+
+            try:
+                margin_left = component['position']['margin']['left']
+            except (KeyError, TypeError):
+                margin_left = 0
+
+            start_col = margin_left
+
+            if 'name' in row:
+                map_key = row['name']
+
+                fd_current_sheet.write(
+                    start_row,
+                    start_col,
+                    map_key,
+                    map_key_format)
+
+                map_value = self.get_value(
+                    self.data,
+                    f"write_{row['data_func']}",
+                    component['payload'][0],
+                    {})
+
+                if 'format_func' in row:
+                    cell_format = getattr(
+                        self.data,
+                        f"get_format_for_{row['format_func']}"
+                    )(component['payload'][0])
+
+                    map_value_format = self.workbook.add_format(cell_format)
+
+                try:
+                    middle = component['position']['middle']
+                except (KeyError, TypeError):
+                    middle = 1
+
+                start_col += middle
+
+            fd_current_sheet.write(
+                start_row,
+                start_col,
+                map_value,
+                map_value_format)
+
+        return len(component['rows']) + self.margin_component
+
+    def render_table_component(self, fd_current_sheet, component, next_available_row):
+        """Render a Table component into the current sheet at the next available row.
+
+        :param fd_current_sheet:
+
+        :param component:
+
+        :param next_available_row:
+        """
+        header_format = self.get_component_format(component, 'header')
+        component_cell_format = self.get_component_format(component, 'cell')
+
+        for column in component['columns']:
+            self.write_header(
+                fd_current_sheet,
+                column,
+                next_available_row,
+                header_format)
+
+            # validations
+            self.set_validations(fd_current_sheet, column)
+
+            values = self.get_values_for_column(column, component['payload'])
+            self.set_column_width(fd_current_sheet, column, values)
+
+            # format
+            cell_format = self.get_column_format(column) or component_cell_format
+
+            for index, value in enumerate(values):
+                # TODO: use 0;0 notation instead of A1
+                cell_pos = f'{column["letter"]}{index + next_available_row + 1 + self.header_row}'
+                fd_current_sheet.write(cell_pos, value, cell_format)
+
+        return len(values) + 1 + self.margin_component
+
+    def write_header(self, sheet, column, next_available_row, header_format):
+        col = column["letter"]
+        row = self.header_row + next_available_row
+        cell_pos = f'{col}{row}'
+
+        # TODO: use 0;0 notation instead of A1
+        sheet.write(cell_pos, column['name'], header_format)
+
+    def render_text_component(self, fd_current_sheet, component, next_available_row):
+        """Render a Text component into the current sheet at the next available row.
+
+        :param fd_current_sheet:
+
+        :param component:
+
+        :param next_available_row:
+        """
+
+        first_row = next_available_row
+        first_col = 0
+
+        last_row = first_row + component['size']['height']
+        last_col = first_col + (component['size']['width'] - 1)
+
+        range_format = self.get_format(component['format'])
+
+        fd_current_sheet.merge_range(
+            first_row,
+            first_col,
+            last_row,
+            last_col,
+            component['text'],
+            range_format)
+
+        return component['size']['height'] + self.margin_component
+
+    def render_image_component(self, fd_current_sheet, component, next_available_row):
+        """Render a Image component into the current sheet at the next available row.
+
+        :param fd_current_sheet: file descriptor of the current sheet
+        :type fd_current_sheet: xlsx
+        :param component:
+
+        :param next_available_row:
+        """
+        if 'position' in component and 'x' in component['position']:
+            n_row = component['position']['x']
+            n_col = component['position']['y']
+        else:
+            n_row = next_available_row
+            n_col = 0
+
+        fd_current_sheet.insert_image(
+            n_row, n_col,
+            component['image'],
+            component['parameters'])
+
+        try:
+            component['position']['float']
+            return 0
+        except KeyError:
+            # TODO: this constant should go somewhere else
+            height_cell_px = 20
+            image_heigt_in_cells = math.ceil(component['size']['height'] / height_cell_px)
+            return image_heigt_in_cells + self.margin_component
+
 
     def add_reserved_sheets(self):
         """SmartExcel automatically adds two spreadsheets:
@@ -310,6 +355,26 @@ class SmartExcel():
                 'reserved': True,
                 'name': sheet_name
             }
+
+    def parse_definition(self, definition):
+        """Parse a definition.
+
+        :param definition: the spreadhsheet definition
+        :type definition: list of dict
+
+        Supported types:
+        - sheet
+        - format
+        """
+
+        for elem in definition:
+            try:
+                if elem['type'] == 'sheet':
+                    self.parse_sheet(elem)
+                elif elem['type'] == 'format':
+                    self.parse_format(elem)
+            except KeyError:
+                pass
 
     def parse_sheet(self, definition, index=0):
         """Parse a sheet definition.
@@ -323,8 +388,11 @@ class SmartExcel():
                     'func': 'a_function'
                 }
         - components: a list
+        - settings: a dict
+            => https://xlsxwriter.readthedocs.io/page_setup.html
         """
 
+        # parse sheet name
         try:
             if isinstance(definition['name'], str):
                 sheet_name = definition['name']
@@ -338,11 +406,13 @@ class SmartExcel():
         if sheet_name in self.reserved_sheets:
             raise ValueError(f'{sheet_name} is a reserved sheet name.')
 
+        # parse sheet key
         try:
             sheet_key = definition['key']
         except KeyError:
             sheet_key = f'{sheet_name}-{index}'
 
+        # parse settings
         if 'settings' in definition:
             settings = definition['settings']
         else:
@@ -389,69 +459,57 @@ class SmartExcel():
                 raise ValueError(f"Type `{component['type']}` not supported.")
 
             if 'recursive' in component:
-                for index, instance in enumerate(self.data.results[component['payload']]):
+                self.parse_recursive_components(component, **kwargs)
 
-                    payload = self.get_payload(
-                        func_name=component['recursive']['payload_func'],
-                        instance=instance,
-                        foreign_key=component['recursive']['foreign_key'])
+    def parse_recursive_components(self, parent_comp, **kwargs):
+        for index, instance in enumerate(self.data.results[parent_comp['payload']]):
 
-                    self.data.results[component['recursive']['payload_func']] = payload
+            # compute payload for the current instance.
+            payload = self.get_payload(
+                func_name=parent_comp['recursive']['payload_func'],
+                instance=instance,
+                foreign_key=parent_comp['recursive']['foreign_key'])
 
-                    # inherit parent's format
-                    if 'format' in component:
-                        component_format = component['format']
-                    elif 'format' in component['recursive']:
-                        component_format = component['recursive']['format']
-                    else:
-                        component_format = None
+            self.data.results[parent_comp['recursive']['payload_func']] = payload
 
-                    for rec_component in component['recursive']['components']:
-                        if rec_component['type'] in ['map', 'table']:
-                            rec_component['payload'] = component['recursive']['payload_func']
+            # inherit parent's format
+            if 'format' in parent_comp:
+                comp_format = parent_comp['format']
+            elif 'format' in parent_comp['recursive']:
+                comp_format = parent_comp['recursive']['format']
+            else:
+                comp_format = None
 
-                        if rec_component['type'] == component['type']:
-                            rec_component['format'] = component_format
+            for child_comp in parent_comp['recursive']['components']:
+                # assign parent's `payload` to Map or Table children components.
+                # Image or Text components don't need a `payload`.
+                if child_comp['type'] in ['map', 'table']:
+                    child_comp['payload'] = parent_comp['recursive']['payload_func']
 
-                        rec_component['instance'] = instance
+                # assign parent's `format` to children having the same type.
+                if child_comp['type'] == parent_comp['type']:
+                    child_comp['format'] = comp_format
 
+                # assign the current instance of the payload to the child.
+                # similar than `self`.
+                child_comp['instance'] = instance
 
-                    sheet_name = getattr(
-                        self.data,
-                        f"get_sheet_name_for_{component['recursive']['name']['func']}")(
-                            instance
-                        )
+            # compute the child's sheet name
+            sheet_name = getattr(
+                self.data,
+                f"get_sheet_name_for_{parent_comp['recursive']['name']['func']}"
+                )(instance)
 
-                    definition = {
-                        'name': sheet_name,
-                        'settings': kwargs['settings'],
-                        'components': component['recursive']['components']
-                    }
+            definition = {
+                'name': sheet_name,
+                # children inherit parent's settings
+                'settings': kwargs['settings'],
+                'components': parent_comp['recursive']['components']
+            }
 
-                    self.parse_sheet(
-                        definition=definition,
-                        index=index)
-
-
-    def parse_definition(self, definition):
-        """Parse a definition.
-
-        :param definition: the spreadhsheet definition
-        :type definition: list of dict
-
-        Supported types:
-        - sheet
-        - format
-        """
-
-        for elem in definition:
-            try:
-                if elem['type'] == 'sheet':
-                    self.parse_sheet(elem)
-                elif elem['type'] == 'format':
-                    self.parse_format(elem)
-            except KeyError:
-                pass
+            self.parse_sheet(
+                definition=definition,
+                index=index)
 
     def parse_format(self, cell_format):
         """Parse a format.
@@ -484,10 +542,8 @@ class SmartExcel():
             self.formats[cell_format['key']].set_num_format(
                 cell_format['num_format'])
 
-
-
     def parse_map(self, **kwargs):
-        """Parse a map.
+        """Parse a Map component (as the data structuce).
 
         :param kwargs: the map definition
         :type kwargs: a dict
@@ -495,13 +551,13 @@ class SmartExcel():
         Attributes:
         - 'type': 'table' (required)
         - 'name': a string (required)
-        - 'position': a dict (required)
+        - 'rows': a list of dict (required)
+        - 'payload': a string (required)
+        - 'position': a dict
             => {
                 'x': 0,
                 'y': 0
             }
-        - 'rows': a list of dict (required)
-        - 'payload': a string (required)
         - 'format': a dict
             => {
                 'map_key',
@@ -538,6 +594,7 @@ class SmartExcel():
             position = None
 
         self.sheets[sheet_key]['components'].append({
+            'type': 'map',
             'payload': self.data.results[kwargs['payload']],
             'name': kwargs['name'],
             'rows': parsed_rows,
@@ -551,15 +608,14 @@ class SmartExcel():
         Attributes:
         - 'type': 'table' (required)
         - 'name': a string (required)
-        - 'position': a dict (required)
         - 'columns': a list of dict (required)
         - 'payload': a string (required)
         - 'group_name'
         - 'repeat': a string or a dict
-        - 'format: a dict
+        - 'format': a dict
             => {
-                'header':
-                'cell'
+                'header': a string
+                'cell': a string
             }
         """
 
@@ -567,6 +623,7 @@ class SmartExcel():
             'columns',
             'payload'
         ]
+
         validate_attrs(table_required_attrs, kwargs, 'table component')
 
         # parse 'group_name'
@@ -599,31 +656,34 @@ class SmartExcel():
         else:
             raise ValueError(f"{kwargs['payload']} not present in {self.data} `results` list.")
 
+        # parse format
         if 'format' in kwargs:
             table_format = kwargs['format']
         else:
             table_format = None
 
-        if 'position' in kwargs:
-            position = kwargs['position']
-        else:
-            position = None
-
         self.sheets[sheet_key]['components'].append({
+            'type': 'table',
             'payload': payload,
             'name': kwargs['name'],
             'columns': parsed_columns,
-            'position': position,
             'format': table_format
         })
 
 
     def parse_text(self, **kwargs):
         """Parse a Text component.
-
+        Attributes:
+        - 'type': 'table' (required)
+        - 'name': a string (required)
+        - 'size': a dict (required)
+        - 'text_func': a string (required)
+        - 'format': a string
         """
 
         required_attrs = [
+            'name',
+            'text_func',
             'size',
         ]
 
@@ -637,7 +697,9 @@ class SmartExcel():
         else:
             text_format = None
 
+        # compute `text` from `text_func`
         if 'instance' in kwargs:
+            # `instance` is available for a child's component
             text = getattr(
                 self.data,
                 f"get_text_for_{kwargs['text_func']}"
@@ -648,24 +710,33 @@ class SmartExcel():
                 f"get_text_for_{kwargs['text_func']}"
             )()
 
-        if 'position' in kwargs:
-            position = kwargs['position']
-        else:
-            position = None
-
         self.sheets[sheet_key]['components'].append({
+            'type': 'text',
             'text': text,
             'size': kwargs['size'],
-            'position': position,
             'format': text_format
         })
 
     def parse_image(self, **kwargs):
-        """ Parse an Image component.
+        """Parse a Image component.
+        Attributes:
+        - 'type': 'table' (required)
+        - 'name': a string (required)
+        - 'size': a dict (required)
+        - 'image_func': a string (required)
+        - 'position': a dict
+            => {
+                'x': int,
+                'y': int,
+                'float': boolean
+            }
+        - 'parameters' : a dict
+            => https://xlsxwriter.readthedocs.io/worksheet.html#worksheet-insert-image
         """
         required_attrs = [
+            'name',
+            'image_func',
             'size',
-            'key'
         ]
 
         validate_attrs(required_attrs, kwargs, 'image component')
@@ -674,14 +745,15 @@ class SmartExcel():
         sheet_key = kwargs['sheet_key']
 
         if 'instance' in kwargs:
+            # `instance` is available for a child's component
             image = getattr(
                 self.data,
-                f"get_image_{kwargs['key']}"
+                f"get_image_{kwargs['image_func']}"
             )(kwargs['instance'], kwargs['size'])
         else:
             image = getattr(
                 self.data,
-                f"get_image_{kwargs['key']}"
+                f"get_image_{kwargs['image_func']}"
             )(kwargs['size'])
 
         if 'parameters' in kwargs:
@@ -695,10 +767,11 @@ class SmartExcel():
             position = {}
 
         self.sheets[sheet_key]['components'].append({
+            'type': 'image',
             'image': image,
             'size': kwargs['size'],
-            'position': position,
-            'parameters': parameters
+            'parameters': parameters,
+            'position': position
         })
 
 
@@ -715,14 +788,16 @@ class SmartExcel():
         - 'name': a string or a list (required):
             => 'name': 'A sheet name'
             => 'name': {
-                    'func': 'a_function'
+                    'func': a string
                 }
-        - 'key': a string
+        - 'data_func': a string (required)
+        - 'width': a integer
+        - 'format': a string
         """
 
         required_attrs = [
             'name',
-            'key'
+            'data_func'
         ]
 
         parsed_columns = []
@@ -753,12 +828,6 @@ class SmartExcel():
                 parsed_columns.append(tmp_col)
             return parsed_columns
 
-    def write_header(self, sheet, column, next_available, header_format):
-        col = column["letter"]
-        row = self.header_row + next_available['row']
-        cell_pos = f'{col}{row}'
-
-        sheet.write(cell_pos, column['name'], header_format)
 
     def set_list_source_func(self, sheet, cell_range, column):
         if 'validations' in column and 'list_source_func' in column['validations']:
@@ -776,7 +845,7 @@ class SmartExcel():
         )
 
     def set_validations(self, sheet, column):
-        if column["key"] in self.validations:
+        if column['data_func'] in self.validations:
             cell_range = self.column_cell_range(column)
 
             self.set_list_source_func(sheet, cell_range, column)
@@ -807,7 +876,7 @@ class SmartExcel():
                     pass
                 if 'columns' in component:
                     for column in component['columns']:
-                        if column['key'] not in self.validations:
+                        if column['data_func'] not in self.validations:
                             tmp = {
                                 'row': len(self.validations) + 1
                             }
@@ -815,7 +884,7 @@ class SmartExcel():
                                 tmp.update(column['validations'])
 
                                 if 'list_source_func' in column['validations']\
-                                    and column['key'] not in self.validations:
+                                    and column['data_func'] not in self.validations:
                                     list_source = getattr(
                                         self.data,
                                         column['validations']['list_source_func'])()
@@ -828,7 +897,7 @@ class SmartExcel():
                                         f"A{tmp['row']}",
                                         list_source)
 
-                                self.validations[column['key']] = tmp
+                                self.validations[column['data_func']] = tmp
 
     def get_format(self, format_name):
         if format_name in self.formats:
@@ -907,7 +976,7 @@ class SmartExcel():
         return [
             self.get_value(
                 self.data,
-                'write_{key}'.format(key=column['key']),
+                'write_{key}'.format(key=column['data_func']),
                 obj,
                 {'index': index})
             for index, obj in enumerate(payload)  # self.data.results
