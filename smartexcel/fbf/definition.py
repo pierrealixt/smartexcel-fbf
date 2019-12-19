@@ -384,6 +384,26 @@ FBF_DEFINITION = [
                     ]
                 }
             },
+            {
+                'type': 'image',
+                'name': 'Kartoza logo',
+                'image_func': 'kartoza_logo',
+                'size': {
+                    'width': 400,
+                    'height': 300
+                },
+                'position': {
+                    'margin': {
+                        'top': 3,
+                        'left': 3
+                    }
+                },
+                'parameters': {
+                    'x_scale': 0.5,
+                    'y_scale': 0.6,
+                    'x_offset': 52
+                }
+            },
         ]
     }
 ]

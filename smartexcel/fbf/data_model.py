@@ -341,6 +341,9 @@ class FbfFloodData():
     def get_image_fba_logo(self, size):
         return path_to_image('fba-inasafe.png')
 
+    def get_image_kartoza_logo(self, size):
+        return path_to_image('kartoza.png')
+
     def get_image_flood_summary_map(self, size):
         # substract x_max and x_min => width
         # substract y_max and y_min => height
