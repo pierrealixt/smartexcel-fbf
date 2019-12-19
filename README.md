@@ -49,6 +49,7 @@ A file `test_fbf.xlsx` is created at the root of this project. Open it and make 
 ```
 pip3 install git+https://github.com/kartoza/smartexcel-fbf.git
 ```
+Add the flag `--upgrade` to upgrade the package.
 
 ### python/pl code
 
