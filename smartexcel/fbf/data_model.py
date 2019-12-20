@@ -341,6 +341,9 @@ class FbfFloodData():
     def get_image_fba_logo(self, size):
         return path_to_image('fba-inasafe.png')
 
+    def get_image_kartoza_logo(self, size):
+        return path_to_image('kartoza2.png')
+
     def get_image_flood_summary_map(self, size):
         # substract x_max and x_min => width
         # substract y_max and y_min => height
@@ -404,6 +407,25 @@ class FbfFloodData():
 
         path_map = download_map(url, params['image_name'])
         return path_map
+
+    def apply_setting_set_paper(self, fd_current_sheet):
+        # 8 is A3
+        fd_current_sheet.set_paper(8)
+
+    def apply_setting_center_horizontally(self, fd_current_sheet):
+        fd_current_sheet.center_horizontally()
+
+    def apply_setting_set_footer(self, fd_current_sheet):
+        # &C&G:
+        # &C : Center
+        # &G : Picture
+        fd_current_sheet.set_footer(
+            '&C&G',
+            {
+                'image_center': self.get_image_kartoza_logo(None)
+            }
+        )
+
 
 def build_wms_url(flood_event_id, bbox, size):
     width = size['width']
