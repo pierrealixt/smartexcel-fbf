@@ -59,7 +59,6 @@ class SmartExcel():
         self.sheets = {}
         self.formats = {}
         self.validations = {}
-        self.settings = {}
         self.groups = {}
 
         self.data = data
@@ -164,18 +163,7 @@ class SmartExcel():
 
             fd_current_sheet = sheet_data['fd']
 
-            # apply settings to each sheet
-            for method, value in sheet_data['settings'].items():
-                if value is None:
-                    getattr(
-                        fd_current_sheet,
-                        method
-                    )()
-                else:
-                    getattr(
-                        fd_current_sheet,
-                        method
-                    )(value)
+            self.apply_settings(fd_current_sheet, sheet_data['settings'])
 
             next_available_row = 0
 
@@ -186,6 +174,20 @@ class SmartExcel():
                 )(fd_current_sheet, component, next_available_row)
 
         self.workbook.close()
+
+    def apply_settings(self, fd_current_sheet, settings):
+        """Apply settings to the current sheet.
+
+        :param settings: Settings to be applied on the current sheet
+        :type settings: list
+        => https://xlsxwriter.readthedocs.io/page_setup.html
+        """
+        for func_setting in settings:
+            getattr(
+                self.data,
+                f"apply_setting_{func_setting}"
+            )(fd_current_sheet)
+
 
     def render_map_component(self, fd_current_sheet, component, next_available_row):
         """Render a Map component into the current sheet at the next available row.
@@ -420,7 +422,7 @@ class SmartExcel():
         if 'settings' in definition:
             settings = definition['settings']
         else:
-            settings = {}
+            settings = []
 
         self.sheets[sheet_key] = {
             'name': sheet_name,

@@ -111,6 +111,20 @@ class DataModel():
             'fbf/images',
             'partner_logos_bigger.png')
 
+    def get_text_for_hello_world(self):
+        return 'Hello World!'
+
+    def apply_setting_set_paper(self, fd_current_sheet):
+        fd_current_sheet.set_paper(8)
+
+    def apply_setting_set_footer(self, fd_current_sheet):
+        fd_current_sheet.set_footer(
+            '&C&G',
+            {
+                'image_center': self.get_image_partner_logos_small(None)
+            }
+        )
+
 
 def get_smart_excel(definition, data_model, output='template.xlsx'):
     if isinstance(definition, dict):
@@ -647,6 +661,34 @@ class TestDumpImages(unittest.TestCase):
             output='test_dump_images.xlsx')
         excel.dump()
 
+
+
+class TestApplySettings(unittest.TestCase):
+    def runTest(self):
+        definition = {
+            'type': 'sheet',
+            'settings': [
+                'set_paper',
+                'set_footer'
+            ],
+            'name': 'Yes',
+            'components': [
+                {
+                    'type': 'text',
+                    'name': 'Hello world',
+                    'text_func': 'hello_world',
+                    'size': {
+                        'width': 3,
+                        'height': 3
+                    }
+                }
+            ]
+        }
+        excel = get_smart_excel(
+            definition,
+            DataModel,
+            output='test_apply_settings.xlsx')
+        excel.dump()
 
 
 if __name__ == "__main__":

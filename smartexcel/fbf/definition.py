@@ -72,10 +72,11 @@ FBF_DEFINITION = [
     },
     {
         'type': 'sheet',
-        'settings': {
-            'set_paper': 8,
-            'center_horizontally': None
-        },
+        'settings': [
+            'set_paper',
+            'center_horizontally',
+            'set_footer'
+        ],
         'name': {
             'func': 'flood_summary'
         },
