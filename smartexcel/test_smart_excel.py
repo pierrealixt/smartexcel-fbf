@@ -329,6 +329,82 @@ class TestParseSheetDefinition(unittest.TestCase):
         self.assertEqual(len(excel.sheets['default']['components']), 1)
         self.assertTrue('image' in excel.sheets['default']['components'][0])
 
+    def test_chart_component(self):
+        from collections import namedtuple
+        summary = namedtuple('Summary', 'district_name, total_buildings, flooded_buildings')
+
+        class ChartDataModel():
+            def __init__(self):
+                self.results = {
+                    'flood_summary': [
+                        summary(
+                            district_name='Bogor',
+                            total_buildings=1000,
+                            flooded_buildings=42
+                        ),
+                        summary(
+                            district_name='Bekasi',
+                            total_buildings=2000,
+                            flooded_buildings=420
+                        ),
+                        summary(
+                            district_name='Karawang',
+                            total_buildings=3000,
+                            flooded_buildings=420
+                        )
+                    ]
+                }
+            def get_chart_categories_for_summary_chart(self, payload):
+                return [
+                    instance.district_name
+                    for instance in self.results[payload]
+                ]
+
+            def get_chart_series_for_summary_chart(self, payload):
+                return [
+                    [
+                        instance.total_buildings
+                        for instance in self.results[payload]
+                    ],
+                    [
+                        instance.flooded_buildings
+                        for instance in self.results[payload]
+                    ],
+                    [
+                        instance.total_buildings - instance.flooded_buildings
+                        for instance in self.results[payload]
+                    ]
+                ]
+
+            def get_chart_serie_names_for_summary_chart(self):
+                return ['Total buildings', 'Flooded buildings', 'Non flooded buildings']
+
+
+        self.sheet_def['key'] = 'default'
+        chart_comp = {
+            'type': 'chart',
+            'name': 'Bar Chart',
+            'type_chart': 'bar',
+            'payload': 'flood_summary',
+            'key_func': 'summary_chart',
+            'position': {
+                'margin': {
+                    'left': 1,
+                    'top': 0
+                }
+            }
+        }
+        self.sheet_def['components'] = [
+            chart_comp
+        ]
+        excel = get_smart_excel(
+            self.sheet_def,
+            ChartDataModel,
+            'test_chart.xlsx')
+        self.assertEqual(len(excel.sheets['default']['components']), 1)
+        self.assertTrue('chart' in excel.sheets['default']['components'][0])
+        excel.dump()
+
     def test_recursive(self):
         self.sheet_def['components'] = [
             {

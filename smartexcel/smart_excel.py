@@ -100,6 +100,11 @@ class SmartExcel():
 
         self.parse_definition(definition)
 
+        # TODO: put these somewhere else
+        self._data_next_available_col = 0
+        self._data_next_available_row = 0
+
+
 
     def parse(self):
         """
@@ -192,11 +197,18 @@ class SmartExcel():
     def render_map_component(self, fd_current_sheet, component, next_available_row):
         """Render a Map component into the current sheet at the next available row.
 
-        :param fd_current_sheet:
+        :param fd_current_sheet: file descriptor of the current sheet
+        :type fd_current_sheet: xlsx
 
-        :param component:
+        :param component: the Map component
+        :type component: dict
 
-        :param next_available_row:
+        :param next_available_row: row's index to insert the component
+        :type next_available_row: integer
+
+        :returns: the next available row
+        :rtype: integer
+
         """
         map_key_format = self.get_component_format(component, 'map_key')
         map_value_format = self.get_component_format(component, 'map_value')
@@ -252,11 +264,17 @@ class SmartExcel():
     def render_table_component(self, fd_current_sheet, component, next_available_row):
         """Render a Table component into the current sheet at the next available row.
 
-        :param fd_current_sheet:
+        :param fd_current_sheet: file descriptor of the current sheet
+        :type fd_current_sheet: xlsx
 
-        :param component:
+        :param component: the Table component
+        :type component: dict
 
-        :param next_available_row:
+        :param next_available_row: row's index to insert the component
+        :type next_available_row: integer
+
+        :returns: the next available row
+        :rtype: integer
         """
         header_format = self.get_component_format(component, 'header')
         component_cell_format = self.get_component_format(component, 'cell')
@@ -295,17 +313,23 @@ class SmartExcel():
     def render_text_component(self, fd_current_sheet, component, next_available_row):
         """Render a Text component into the current sheet at the next available row.
 
-        :param fd_current_sheet:
+        :param fd_current_sheet: file descriptor of the current sheet
+        :type fd_current_sheet: xlsx
 
-        :param component:
+        :param component: the Text component
+        :type component: dict
 
-        :param next_available_row:
+        :param next_available_row: row's index to insert the component
+        :type next_available_row: integer
+
+        :returns: the next available row
+        :rtype: integer
         """
 
-        first_row = next_available_row
-        first_col = 0
+        first_row = next_available_row + component['position']['margin']['top']
+        first_col = 0 + component['position']['margin']['left']
 
-        last_row = first_row + component['size']['height']
+        last_row = first_row + (component['size']['height'] - 1)
         last_col = first_col + (component['size']['width'] - 1)
 
         range_format = self.get_format(component['format'])
@@ -325,16 +349,22 @@ class SmartExcel():
 
         :param fd_current_sheet: file descriptor of the current sheet
         :type fd_current_sheet: xlsx
-        :param component:
 
-        :param next_available_row:
+        :param component: the Image component
+        :type component: dict
+
+        :param next_available_row: row's index to insert the component
+        :type next_available_row: integer
+
+        :returns: the next available row
+        :rtype: integer
         """
         if 'position' in component and 'x' in component['position']:
             n_row = component['position']['x']
             n_col = component['position']['y']
         else:
-            n_row = next_available_row
-            n_col = 0
+            n_row = next_available_row + component['position']['margin']['top']
+            n_col = 0 + component['position']['margin']['left']
 
         fd_current_sheet.insert_image(
             n_row, n_col,
@@ -350,6 +380,77 @@ class SmartExcel():
             image_heigt_in_cells = math.ceil(component['size']['height'] / height_cell_px)
             return image_heigt_in_cells + self.margin_component
 
+    def render_chart_bar_component(self, fd_current_sheet, component, next_available_row):
+        """Render a Bar Chart component in the current sheet at the next available row.
+
+        :param fd_current_sheet: file descriptor of the current sheet
+        :type fd_current_sheet: xlsx
+
+        :param component: the Bar Chart component
+        :type component: dict
+
+        :param next_available_row: row's index to insert the component
+        :type next_available_row: integer
+
+        :returns: the next available row
+        :rtype: integer
+        """
+
+        chart = self.workbook.add_chart({'type': 'bar'})
+
+        # Writing data to the _data sheet
+        # first the categories
+        self.sheets['_data']['fd'].write_column(
+            self._data_next_available_row,
+            self._data_next_available_col,
+            component['chart']['categories']
+        )
+
+        categories_range = [
+            self._data_next_available_row,
+            self._data_next_available_col,
+            self._data_next_available_row + len(component['chart']['categories']),
+            self._data_next_available_col
+        ]
+
+        self._data_next_available_col += 1
+
+        # then the series
+        for index, serie in enumerate(component['chart']['series']):
+            self.sheets['_data']['fd'].write_column(
+                self._data_next_available_row,
+                self._data_next_available_col,
+                serie
+            )
+
+            values_range = [
+                self._data_next_available_row,
+                self._data_next_available_col,
+                self._data_next_available_row + len(serie),
+                self._data_next_available_col
+            ]
+
+            chart.add_series({
+                'categories': ['_data'] + categories_range,
+                'values': ['_data'] + values_range,
+                'name': component['chart']['serie_names'][index]
+            })
+            self._data_next_available_col += 1
+
+        row = next_available_row + component['position']['margin']['top']
+        col = 0 + component['position']['margin']['left']
+
+        fd_current_sheet.insert_chart(
+            row,
+            col,
+            chart)
+
+        # increment for the next chart
+        self._data_next_available_col += 1
+
+        # TODO: Find a way to know the height of a chart
+        # to convert into a number of rows (next_available_row)
+        return 0
 
     def add_reserved_sheets(self):
         """SmartExcel automatically adds two spreadsheets:
@@ -461,6 +562,8 @@ class SmartExcel():
                 self.parse_text(**params)
             elif component['type'] == 'image':
                 self.parse_image(**params)
+            elif component['type'] == 'chart':
+                self.parse_chart(**params)
             else:
                 raise ValueError(f"Type `{component['type']}` not supported.")
 
@@ -691,6 +794,13 @@ class SmartExcel():
             }
         - 'text_func': a string (required)
         - 'format': a string
+        - 'position': a dict
+            => {
+                'margin': {
+                    'top': an integer (number of cell)
+                    'left': an integer
+                }
+            }
         """
 
         required_attrs = [
@@ -722,11 +832,14 @@ class SmartExcel():
                 f"get_text_for_{kwargs['text_func']}"
             )()
 
+        position = self.parse_position(kwargs)
+
         self.sheets[sheet_key]['components'].append({
             'type': 'text',
             'text': text,
             'size': kwargs['size'],
-            'format': text_format
+            'format': text_format,
+            'position': position
         })
 
     def parse_image(self, **kwargs):
@@ -744,7 +857,11 @@ class SmartExcel():
             => {
                 'x': an integer (col),
                 'y': an integer (row),
-                'float': boolean
+                'float': boolean,
+                'margin': {
+                    'top': an integer (number of cell),
+                    'left': an integer
+                }
             }
         - 'parameters' : a dict
             => https://xlsxwriter.readthedocs.io/worksheet.html#worksheet-insert-image
@@ -777,10 +894,7 @@ class SmartExcel():
         else:
             parameters = {}
 
-        if 'position' in kwargs:
-            position = kwargs['position']
-        else:
-            position = {}
+        position = self.parse_position(kwargs)
 
         self.sheets[sheet_key]['components'].append({
             'type': 'image',
@@ -790,6 +904,58 @@ class SmartExcel():
             'position': position
         })
 
+    def parse_chart(self, **kwargs):
+        """Parse a Chart component.
+
+        Attributes:
+        - 'type': 'chart' (required)
+        - 'name': a string (required)
+        - 'type_chart: a string (required)
+        - 'key_func': a string
+        - 'payload': a string
+
+        => https://xlsxwriter.readthedocs.io/chart.html
+        """
+        required_attrs = [
+            'type_chart',
+            'key_func'
+        ]
+
+        supported_type_charts = [
+            'bar'
+        ]
+
+        validate_attrs(required_attrs, kwargs, 'chart component')
+        validate_type_charts(supported_type_charts, kwargs['type_chart'])
+
+        sheet_key = kwargs['sheet_key']
+
+        categories = getattr(
+            self.data,
+            f"get_chart_categories_for_{kwargs['key_func']}"
+        )(kwargs['payload'])
+
+        series = getattr(
+            self.data,
+            f"get_chart_series_for_{kwargs['key_func']}"
+        )(kwargs['payload'])
+
+        serie_names = getattr(
+            self.data,
+            f"get_chart_serie_names_for_{kwargs['key_func']}"
+        )()
+
+        position = self.parse_position(kwargs)
+
+        self.sheets[sheet_key]['components'].append({
+            'type': f"chart_{kwargs['type_chart']}",
+            'chart': {
+                'categories': categories,
+                'series': series,
+                'serie_names': serie_names
+            },
+            'position': position
+        })
 
     def parse_columns(self, columns, repeat):
         """Parse columns of a Table component.
@@ -844,6 +1010,17 @@ class SmartExcel():
                 parsed_columns.append(tmp_col)
             return parsed_columns
 
+    def parse_position(self, component):
+        if 'position' in component:
+            position = component['position']
+        else:
+            position = {
+                'margin': {
+                    'left': 0,
+                    'top': 0
+                }
+            }
+        return position
 
     def set_list_source_func(self, sheet, cell_range, column):
         if 'validations' in column and 'list_source_func' in column['validations']:
@@ -1120,3 +1297,7 @@ def validate_size(element):
         validate_type(element[attr], key, int)
 
     return True
+
+def validate_type_charts(supported_type_charts, type_chart):
+    if type_chart not in supported_type_charts:
+        raise ValueError(f'`{type_chart}` is not supported.')

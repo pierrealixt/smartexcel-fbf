@@ -424,6 +424,67 @@ class FbfFloodData():
             }
         )
 
+    def get_chart_categories_for_district_summary_chart(self, payload):
+        return self.get_chart_categories_for_area_summary_chart(
+            payload,
+            'district_name')
+
+    def get_chart_categories_for_sub_district_summary_chart(self, payload):
+        return self.get_chart_categories_for_area_summary_chart(
+            payload,
+            'sub_district_name')
+
+    def get_chart_categories_for_village_summary_chart(self, payload):
+        return self.get_chart_categories_for_area_summary_chart(
+            payload,
+            'village_name')
+
+    def get_chart_categories_for_area_summary_chart(self, payload, area_name):
+        return [
+            getattr(instance, area_name)
+            for instance in self.results[payload]
+        ]
+
+    def get_chart_series_for_district_summary_chart(self, payload):
+        return self.get_chart_series_for_area_summary_chart(payload)
+
+    def get_chart_series_for_sub_district_summary_chart(self, payload):
+        return self.get_chart_series_for_area_summary_chart(payload)
+
+    def get_chart_series_for_village_summary_chart(self, payload):
+        return self.get_chart_series_for_area_summary_chart(payload)
+
+    def get_chart_series_for_area_summary_chart(self, payload):
+        return [
+            [
+                instance.total_buildings
+                for instance in self.results[payload]
+            ],
+            [
+                instance.flooded_buildings
+                for instance in self.results[payload]
+            ],
+            [
+                instance.total_buildings - instance.flooded_buildings
+                for instance in self.results[payload]
+            ]
+        ]
+
+    def get_chart_serie_names_for_district_summary_chart(self):
+        return self.get_chart_serie_names_for_area_summary_chart()
+
+    def get_chart_serie_names_for_sub_district_summary_chart(self):
+        return self.get_chart_serie_names_for_area_summary_chart()
+
+    def get_chart_serie_names_for_village_summary_chart(self):
+        return self.get_chart_serie_names_for_area_summary_chart()
+
+    def get_chart_serie_names_for_area_summary_chart(self):
+        return ['Total buildings', 'Flooded buildings', 'Non flooded buildings']
+
+
+
+
 
 def build_wms_url(flood_event_id, bbox, size):
     width = size['width']

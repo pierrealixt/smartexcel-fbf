@@ -86,7 +86,7 @@ FBF_DEFINITION = [
                 'name': 'Sheet Title',
                 'size': {
                     'width': 4,
-                    'height': 2
+                    'height': 3
                 },
                 'text_func': 'main_sheet_title',
                 'format': 'sheet_title'
@@ -161,7 +161,7 @@ FBF_DEFINITION = [
                 'name': 'Overview Map',
                 'size': {
                     'width': 4,
-                    'height': 1
+                    'height': 2
                 },
                 'text_func': 'main_sheet_sub_title',
                 'format': 'sheet_sub_title'
@@ -376,15 +376,54 @@ FBF_DEFINITION = [
                                                         },
                                                     ]
                                                 },
+                                                {
+                                                    'type': 'chart',
+                                                    'name': 'Villages Summary Bart Chart',
+                                                    'type_chart': 'bar',
+                                                    'payload': 'villages',
+                                                    'key_func': 'village_summary_chart',
+                                                    'position': {
+                                                        'margin': {
+                                                            'left': 1,
+                                                            'top': 2
+                                                        }
+                                                    }
+                                                }
                                             ]
                                         }
                                     }
                                 ]
                             }
+                        },
+                        {
+                            'type': 'chart',
+                            'name': 'Sub-district Summary Bart Chart',
+                            'type_chart': 'bar',
+                            'payload': 'subdistricts',
+                            'key_func': 'sub_district_summary_chart',
+                            'position': {
+                                'margin': {
+                                    'left': 1,
+                                    'top': 2
+                                }
+                            }
                         }
                     ]
                 }
             },
+            {
+                'type': 'chart',
+                'name': 'District Summary Bart Chart',
+                'type_chart': 'bar',
+                'payload': 'districts',
+                'key_func': 'district_summary_chart',
+                'position': {
+                    'margin': {
+                        'left': 1,
+                        'top': 2
+                    }
+                }
+            }
         ]
     }
 ]
