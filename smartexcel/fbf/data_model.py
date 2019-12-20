@@ -416,11 +416,9 @@ class FbfFloodData():
         fd_current_sheet.center_horizontally()
 
     def apply_setting_set_footer(self, fd_current_sheet):
-        # &C&G:
-        # &C : Center
-        # &G : Picture
+        # https://xlsxwriter.readthedocs.io/page_setup.html#set_header
         fd_current_sheet.set_footer(
-            '&C&G',
+            '&LMade with love by&C&G&R&"Courier New,Bold"https://kartoza.com',
             {
                 'image_center': self.get_image_kartoza_logo(None)
             }

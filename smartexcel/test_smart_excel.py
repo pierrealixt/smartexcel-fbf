@@ -111,17 +111,27 @@ class DataModel():
             'fbf/images',
             'partner_logos_bigger.png')
 
+    def get_image_kartoza_logo(self, size):
+        return os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            'fbf/images',
+            'kartoza2.png')
+
+
     def get_text_for_hello_world(self):
         return 'Hello World!'
 
     def apply_setting_set_paper(self, fd_current_sheet):
         fd_current_sheet.set_paper(8)
 
+    def apply_setting_center_horizontally(self, fd_current_sheet):
+        fd_current_sheet.center_horizontally()
+
     def apply_setting_set_footer(self, fd_current_sheet):
         fd_current_sheet.set_footer(
-            '&C&G',
+            '&LMade with love by&C&G&R&"Courier New,Bold"https://kartoza.com',
             {
-                'image_center': self.get_image_partner_logos_small(None)
+                'image_center': self.get_image_kartoza_logo(None)
             }
         )
 
@@ -669,7 +679,8 @@ class TestApplySettings(unittest.TestCase):
             'type': 'sheet',
             'settings': [
                 'set_paper',
-                'set_footer'
+                'set_footer',
+                'center_horizontally'
             ],
             'name': 'Yes',
             'components': [
