@@ -5,4 +5,5 @@ test_*.xlsx
 smartexcel/test_*.xlsx
 env/
 __pycache__/
-smartexcel/fbf/maps/*.png
+dist/
+SmartExcel.egg-info
